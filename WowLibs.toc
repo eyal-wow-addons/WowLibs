@@ -1,0 +1,18 @@
+## Interface: 100205
+
+## Title: Wow|cff40a5f7Libs|r
+## Notes: Provides the infrastructure for addons.
+## IconTexture: Interface\AddOns\WowLibs\Logo
+## Version: @project-version@
+## Author: Eyal Alon
+
+Libs\LibStub\LibStub.lua
+
+Libs\Contracts.lua
+Libs\Addon.lua
+Libs\UnitTest.lua
+
+Main.lua
+
+Tests\Addon\AddonTests.lua
+#Tests\Addon\LifeCycleTest.lua
