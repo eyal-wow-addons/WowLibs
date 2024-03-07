@@ -109,7 +109,7 @@ do
             Config:RegisterOptionsTable(parentName, table)
             Dialog:AddToBlizOptions(parentName, table.name)
         else
-            local childName = parentName.."_".. table.name
+            local childName = parentName .. "_" .. table.name
             Config:RegisterOptionsTable(childName, table)
             Dialog:AddToBlizOptions(childName, table.name, parentName)
         end
