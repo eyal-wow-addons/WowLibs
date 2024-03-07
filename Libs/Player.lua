@@ -1,3 +1,5 @@
+---@diagnostic disable: undefined-field
+
 assert(LibStub, "Player-1.0 requires LibStub")
 
 local C = LibStub("Contracts-1.0")
@@ -17,10 +19,20 @@ local UnitFullName = UnitFullName
 local REALM_PATTERN = "% - (.+)"
 
 local charName, charRealm1, charRealm2, charFullName
-local realms, realmsMap = GetAutoCompleteRealms() or {}, {}
+local realms = GetAutoCompleteRealms() or {}
+local IsRealmConnectedRealm
 
-for _, v in ipairs(realms) do
-    realmsMap[v] = true
+do
+    local realmsMap = {}
+    for _, v in ipairs(realms) do
+        realmsMap[v] = true
+    end
+
+    IsRealmConnectedRealm = function(realm, includeOwn)
+        C:IsString(realm, 2)
+        realm = realm:gsub("[ -]", "")
+        return (realm ~= charRealm2 or includeOwn) and realmsMap[realm]
+    end
 end
 
 local frame = CreateFrame("Frame")
@@ -30,12 +42,6 @@ frame:SetScript("OnEvent", function()
     charRealm2 = select(2, UnitFullName("player"))
     charFullName = sjoin(" - ", charName, charRealm1)
 end)
-
-function lib:IsRealmConnectedRealm(realm, includeOwn)
-    C:IsString(realm, 2)
-    realm = realm:gsub("[ -]", "")
-    return (realm ~= charRealm2 or includeOwn) and realmsMap[realm]
-end
 
 function lib:IterableConnectedRealms(preIterationCallback)
     local i = 0
@@ -76,7 +82,7 @@ end
 
 function lib:IsOnConnectedRealm(name)
     C:IsString(name, 2)
-    return Realm:IsRealmConnectedRealm(name:match(REALM_PATTERN))
+    return IsRealmConnectedRealm(name:match(REALM_PATTERN))
 end
 
 function lib:RemoveRealm(name)
