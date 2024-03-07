@@ -13,35 +13,35 @@ local function AddTestCase(scope, testName, testFunc)
     C:IsString(testName, 3)
     C:IsFunction(testFunc, 4)
     local testCase = {
-        parent = scope,
+        scope = scope,
         name = testName,
         func = testFunc
     }
     table.insert(TestsCases, testCase)
 end
 
-local function ExecuteTestCase(self, name, func, resultsHandler, ...)
-	local success, err = pcall(func, self, ...)
+local function ExecuteTestCase(self, testName, testFunc, resultsHandler, ...)
+	local success, err = pcall(testFunc, self, ...)
     if not success then
-        resultsHandler("TestCase", name, err)
+        resultsHandler("test", testName, err)
     end
     return success
 end
 
 local function PrintHandler(type, ...)
-    if type == "Scope" then
-        local name = ...
-        print("------------------------------------------------------------")
-        print("+ " .. name)
-    elseif type == "TestCase" then
+    if type == "scope" then
+        local name, totalTests = ...
+        print("----------------------------------------------------------------------------------")
+        print("+ " .. name .. " (" .. totalTests .. " Tests)")
+    elseif type == "test" then
         local name, err = ...
         print("   ---")
         print("   + " .. name .. ": " .. err)
-    elseif type == "Summary" then
-        print("------------------------------------------------------------")
-        local totalTests, passedCounter, failedCounter = ...
-        print(("Total Tests: %d Passed: %d Failed: %d"):format(totalTests, passedCounter, failedCounter))
-        print("------------------------------------------------------------")
+    elseif type == "summary" then
+        print("----------------------------------------------------------------------------------")
+        local totalTests, totalScopes, passedCounter, failedCounter = ...
+        print(("Tests: %d | Scopes: %d | Passed: %d | Failed: %d"):format(totalTests, totalScopes, passedCounter, failedCounter))
+        print("----------------------------------------------------------------------------------")
     end
 end
 
@@ -61,10 +61,12 @@ end
 function lib:CreateScope(scopeName)
     C:IsString(scopeName, 2)
     local scope = {
-        __name = scopeName
+        name = scopeName,
+        total = 0
     }
     return setmetatable(scope, {  __newindex = function(self, testName, testFunc)
         AddTestCase(self, testName, testFunc)
+        self.total = self.total + 1
     end })
 end
 
@@ -75,29 +77,30 @@ function lib:IterableTestsCases()
     return function()
         while i <= n do
             local testCase = TestsCases[i]
-            if not scope or testCase.parent ~= scope then
-                scope = testCase.parent
-                return "Scope", testCase.parent.__name
+            if not scope or testCase.scope ~= scope then
+                scope = testCase.scope
+                return "scope", testCase.scope
             end
             i = i + 1
-            return "TestCase", testCase.name, testCase.func
+            return "test", testCase
         end
     end
 end
 
 function lib:Run(resultsHandler)
     resultsHandler = resultsHandler or PrintHandler
-    local totalTests, passedCounter, failCounter = #TestsCases, 0, 0
-    for type, name, func in self:IterableTestsCases() do
-        if type == "Scope" then
-            resultsHandler(type, name)
-        elseif type == "TestCase" then
-            if ExecuteTestCase(self, name, func, resultsHandler) then
+    local totalTests, totalScopes, passedCounter, failCounter = #TestsCases, 0, 0, 0
+    for type, info in self:IterableTestsCases() do
+        if type == "scope" then
+            resultsHandler(type, info.name, info.total)
+            totalScopes = totalScopes + 1
+        elseif type == "test" then
+            if ExecuteTestCase(self, info.name, info.func, resultsHandler) then
                 passedCounter = passedCounter + 1
             else
                 failCounter = failCounter + 1
             end
         end
     end
-    resultsHandler("Summary", totalTests, passedCounter, failCounter)
+    resultsHandler("summary", totalTests, totalScopes, passedCounter, failCounter)
 end

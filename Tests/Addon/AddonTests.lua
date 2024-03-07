@@ -9,12 +9,12 @@ do
         local table = {}
         local actualTable = addon:New("WowLibs", table)
 
-        self:Assert(actualTable ~= table)
+        self:Assert(actualTable == table)
     end
 
     New["Should throw when addonName is not a string"] = function(self)
         self:Capture(function()
-            addon:New("WowLibs", {})
+            addon:New(nil, {})
         end)
     end
 
