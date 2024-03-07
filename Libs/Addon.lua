@@ -252,20 +252,18 @@ do
         return t
     end
 
-    function lib:New(addonName, addonTable)
-        C:IsString(addonName, 2)
-        C:IsTable(addonTable, 3)
-        local _, _, _, _, reason = GetAddOnInfo(addonName)
-        C:Ensures(reason ~= "MISSING", L["ADDON_MISSING"], addonName)
-        if not self.Addons[addonName] then
-            tinsert(Objects, addonTable)
+    function lib:New(name, table)
+        C:IsString(name, 2)
+        C:IsTable(table, 3)
+        if not self.Addons[name] then
+            tinsert(Objects, table)
             for key, value in pairs(api) do
-                if type(value) == "function" and not addonTable[key] then
-                    addonTable[key] = value
+                if type(value) == "function" and not table[key] then
+                    table[key] = value
                 end
             end
-            self.Addons[addonName] = addonTable
+            self.Addons[name] = table
+            return table
         end
-        return addonTable
     end
 end
