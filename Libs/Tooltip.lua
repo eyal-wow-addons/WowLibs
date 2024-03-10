@@ -22,15 +22,15 @@ local ICON_TEXTURE_SETTINGS = {
     margin = { right = 5, bottom = 5 },
 }
 
-local function CreateWidgetProxy(frame, table)
+local function CreateWidgetProxy(frame, proxy)
     C:IsTable(frame, 1)
-    C:IsTable(table, 2)
+    C:IsTable(proxy, 2)
 
     local mt  = {
         __index = frame
     }
 
-    local wrapper = setmetatable(table, mt)
+    local wrapper = setmetatable(proxy, mt)
 
     -- Sets the userdata so the widget API would work with the wrapper
     wrapper[0] = frame[0]
@@ -61,10 +61,10 @@ do
     end
 end
 
-function Tooltip:CreateProxyy(frame, table)
+function Tooltip:CreateProxy(frame, proxy)
     C:IsTable(frame, 2)
-    C:IsTable(table, 3)
-    return CreateWidgetProxy(frame, table)
+    C:IsTable(proxy, 3)
+    return CreateWidgetProxy(frame, proxy)
 end
 
 function Tooltip:AddEmptyLine()
