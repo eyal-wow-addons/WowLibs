@@ -10,9 +10,11 @@ Libs\LibStub\LibStub.lua
 
 Libs\Contracts.lua
 Libs\Addon.lua
+Libs\Tooltip.lua
 Libs\UnitTest.lua
 
 Main.lua
 
 Tests\Addon\AddonTests.lua
 #Tests\Addon\LifeCycleTest.lua
+Tests\Tooltip\TooltipTests.lua
