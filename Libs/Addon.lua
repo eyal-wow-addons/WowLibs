@@ -159,7 +159,7 @@ end
 --[[ Core API ]]
 
 do
-    local api = {}
+    local Api = {}
 
     local function New(self, name)
         C:IsTable(self, 1)
@@ -184,7 +184,7 @@ do
         return object
     end
 
-    function api:NewObject(name)
+    function Api:NewObject(name)
         C:IsString(name, 2)
         local object = New(self, name)
 
@@ -199,7 +199,7 @@ do
         return object
     end
 
-    function api:NewStorage(name)
+    function Api:NewStorage(name)
         C:IsString(name, 2)
         local storage = New(self, name .. "Storage")
 
@@ -210,7 +210,7 @@ do
         return storage
     end
 
-    function api:GetStorage(name)
+    function Api:GetStorage(name)
         C:IsString(name, 2)
         local fullName = name .. "Storage"
         local storage = self[fullName]
@@ -218,7 +218,7 @@ do
         return storage
     end
 
-    function api:SetDependency(dependencyName)
+    function Api:SetDependency(dependencyName)
         C:IsString(dependencyName, 2)
         local dependencyTable = lib.Addons[dependencyName]
 
@@ -227,7 +227,7 @@ do
         end
     end
 
-    function api:CreateTimer(callback)
+    function Api:CreateTimer(callback)
         local t = {}
         local __handle = nil
         local __callback = callback
@@ -257,7 +257,7 @@ do
         C:IsTable(table, 3)
         if not self.Addons[name] then
             tinsert(Objects, table)
-            for key, value in pairs(api) do
+            for key, value in pairs(Api) do
                 if type(value) == "function" and not table[key] then
                     table[key] = value
                 end
