@@ -72,6 +72,11 @@ do
         tinsert(Modules, module)
         return setmetatable(module, { __index = Api })
     end
+
+    function lib:Test(name, tbl)
+        C:IsString(name, 2)
+        return self:CreateModule(name, tbl)
+    end
 end
 
 function lib:IterableTestInfo()
