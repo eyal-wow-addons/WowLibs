@@ -161,7 +161,7 @@ end
 do
     local Api = {}
 
-    local function New(self, name)
+    local function NewNamedObject(self, name)
         C:IsTable(self, 1)
         C:IsString(name, 2)
         local object = self[name]
@@ -175,18 +175,12 @@ do
 
         tinsert(Objects, object)
 
-        for key, value in pairs(Callbacks) do
-            if type(value) == "function" and not object[key] then
-                object[key] = value
-            end
-        end
-
-        return object
+        return setmetatable(object, { __index = Callbacks })
     end
 
     function Api:NewObject(name)
         C:IsString(name, 2)
-        local object = New(self, name)
+        local object = NewNamedObject(self, name)
 
         --Mixin(object, ...)
 
@@ -201,7 +195,7 @@ do
 
     function Api:NewStorage(name)
         C:IsString(name, 2)
-        local storage = New(self, name .. "Storage")
+        local storage = NewNamedObject(self, name .. "Storage")
 
         function storage:RegisterDB(defaults)
             return self.DB:RegisterNamespace(name, defaults)
@@ -252,18 +246,28 @@ do
         return t
     end
 
-    function lib:New(name, table)
+    function lib:New(name, tbl)
         C:IsString(name, 2)
-        C:IsTable(table, 3)
+        C:IsTable(tbl, 3)
         if not self.Addons[name] then
-            tinsert(Objects, table)
-            for key, value in pairs(Api) do
-                if type(value) == "function" and not table[key] then
-                    table[key] = value
+            tinsert(Objects, tbl)
+            self.Addons[name] = tbl
+            return setmetatable(tbl, { __index = Api })
+        end
+    end
+
+    function lib:Delete(name)
+        C:IsString(name, 2)
+        local tbl = self.Addons[name]
+        if tbl then
+            for i = 1, #Objects, 1 do
+                if Objects[i] == tbl then
+                    table.remove(Objects, i)
                 end
             end
-            self.Addons[name] = table
-            return table
+            self.Addons[name] = nil
+            return true
         end
+        return false
     end
 end
