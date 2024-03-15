@@ -13,8 +13,5 @@ Libs\Addon.lua
 Libs\Tooltip.lua
 Libs\UnitTest.lua
 
-Main.lua
-
-Tests\Addon\AddonTests.lua
-#Tests\Addon\LifeCycleTest.lua
-Tests\Tooltip\TooltipTests.lua
+Tests\AddonTests.lua
+Tests\TooltipTests.lua
