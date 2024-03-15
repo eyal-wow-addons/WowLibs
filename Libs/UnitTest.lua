@@ -100,8 +100,10 @@ function lib:IterableTestInfo()
                     return module, scope, test
                 end
                 s, t = s + 1, 1
+                return module, scope
             end
             m, s, t = m + 1, 1, 1
+            return module
         end
     end
 end
@@ -139,20 +141,22 @@ do
         local lastModule, lastScope
         local totalTests, totalModules, totalScopes, passedCounter, failedCounter = 0, #Modules, 0, 0, 0
         for module, scope, test in self:IterableTestInfo() do
-            totalTests = totalTests + 1
             if not lastModule or lastModule ~= module then
                 totalScopes = totalScopes + #module.scopes
                 resultsHandler("module", module.name, #module.scopes)
                 lastModule = module
             end
-            if not lastScope or lastScope ~= scope then
+            if scope and (not lastScope or lastScope ~= scope) then
                 resultsHandler("scope", module.name, scope.name, #scope.tests)
                 lastScope = scope
             end
-            if ExecuteTest("test", module, scope, test, resultsHandler) then
-                passedCounter = passedCounter + 1
-            else
-                failedCounter = failedCounter + 1
+            if test then
+                totalTests = totalTests + 1
+                if ExecuteTest("test", module, scope, test, resultsHandler) then
+                    passedCounter = passedCounter + 1
+                else
+                    failedCounter = failedCounter + 1
+                end
             end
         end
         resultsHandler("summary", totalTests, totalModules, totalScopes, passedCounter, failedCounter)
