@@ -53,21 +53,25 @@ do
                 AddTest(scope, testName, testFunc)
             end })
         end
+    end
 
-        function Api:Test(name)
-            C:IsString(name, 2)
-            return self:CreateScope(name)
-        end
+    function Api:Test(name)
+        C:IsString(name, 2)
+        return self:CreateScope(name)
+    end
+
+    function Api:Ref()
+        return self.ref
     end
 
     function lib:CreateModule(name, tbl)
         C:IsString(name, 2)
-        local uut = tbl or LibStub(name, true)
+        local ref = tbl or LibStub(name, true)
         local module = {
             scopes = {},
             name = name,
-            uut = uut,
-            hasUnitUnderTest = uut ~= nil,
+            ref = ref,
+            hasUnitUnderTest = ref ~= nil,
         }
         tinsert(Modules, module)
         return setmetatable(module, { __index = Api })
@@ -123,7 +127,7 @@ do
     end
 
     local function ExecuteTest(type, module, scope, test, resultsHandler)
-        local success, err = pcall(test.func, module.uut)
+        local success, err = pcall(test.func, module.ref)
         if not success then
             resultsHandler(type, module.name, scope.name, test.name, err)
         end
