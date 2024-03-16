@@ -22,12 +22,12 @@ do
         assert(condition, "Assertion failed: The test condition should have been true, but it was false.")
     end
 
-    function AssertionApi:Capture(func, showError)
+    function AssertionApi:Capture(func, errorHandler)
         C:IsFunction(func, 2)
         self.__calls = self.__calls + 1
         local success, err = pcall(func)
-        if showError and err then
-            print(err)
+        if errorHandler and err then
+            errorHandler(err)
         end
         assert(not success, "Capture failed: The function should have thrown an error, but it did not.")
     end
