@@ -15,3 +15,4 @@ Libs\UnitTest.lua
 
 Tests\AddonTests.lua
 Tests\TooltipTests.lua
+Tests\UnitTest.lua

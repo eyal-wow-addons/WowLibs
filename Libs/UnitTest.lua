@@ -14,14 +14,17 @@ local tinsert = table.insert
 local Modules = {}
 
 do
-    local Api = {}
+    local Module = {}
+    local AssertionApi = {}
 
-    function Api:Assert(condition)
+    function AssertionApi:Assert(condition)
+        self.__calls = self.__calls + 1
         assert(condition, "Assertion failed: The test condition should have been true, but it was false.")
     end
 
-    function Api:Capture(func, showError)
+    function AssertionApi:Capture(func, showError)
         C:IsFunction(func, 2)
+        self.__calls = self.__calls + 1
         local success, err = pcall(func)
         if showError and err then
             print(err)
@@ -36,12 +39,17 @@ do
             C:IsFunction(func, 4)
             local test = {
                 name = name,
-                func = func
+                func = func,
+                api = {
+                    -- NOTE: This is used to determine whether any assertions were executed during the execution of the test
+                    __calls = 0
+                }
             }
+            setmetatable(test.api, { __index = AssertionApi })
             tinsert(scope.tests, test)
         end
 
-        function Api:CreateScope(name)
+        function Module:CreateScope(name)
             C:IsString(name, 2)
             local module = self
             local scope = {
@@ -55,12 +63,12 @@ do
         end
     end
 
-    function Api:Test(name)
+    function Module:Test(name)
         C:IsString(name, 2)
         return self:CreateScope(name)
     end
 
-    function Api:Ref()
+    function Module:Ref()
         return self.ref
     end
 
@@ -74,7 +82,7 @@ do
             hasUnitUnderTest = ref ~= nil,
         }
         tinsert(Modules, module)
-        return setmetatable(module, { __index = Api })
+        return setmetatable(module, { __index = Module })
     end
 
     function lib:Test(name, tbl)
@@ -129,11 +137,11 @@ do
     end
 
     local function ExecuteTest(type, module, scope, test, resultsHandler)
-        local success, err = pcall(test.func, module.ref)
+        local success, err = pcall(test.func, test.api, module.ref)
         if not success then
             resultsHandler(type, module.name, scope.name, test.name, err)
         end
-        return success
+        return test.api.__calls > 0, success
     end
 
     function lib:Run(resultsHandler)
@@ -152,10 +160,14 @@ do
             end
             if test then
                 totalTests = totalTests + 1
-                if ExecuteTest("test", module, scope, test, resultsHandler) then
-                    passedCounter = passedCounter + 1
-                else
-                    failedCounter = failedCounter + 1
+                -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution
+                local valid, success = ExecuteTest("test", module, scope, test, resultsHandler)
+                if valid then
+                    if success then
+                        passedCounter = passedCounter + 1
+                    else
+                        failedCounter = failedCounter + 1
+                    end
                 end
             end
         end

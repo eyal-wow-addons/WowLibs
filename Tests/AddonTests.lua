@@ -47,7 +47,7 @@ do
             self:TriggerEvent("CUSTOM_EVENT", eventName)
         end)
     
-    LifeCycleObjectTest:RegisterEvent("CUSTOM_EVENT", function(self, eventName, arg1)
+    LifeCycleObjectTest:RegisterEvent("CUSTOM_EVENT", function(_, eventName, arg1)
         table.insert(actualEventsOrder, ("object:RegisterEvent:%s:%s"):format(eventName, arg1))
     end)
 
@@ -63,42 +63,42 @@ do
             end
         end
 
-        T:Assert(isEventsOrdered == true)
+        self:Assert(isEventsOrdered == true)
     end
 end
 
 do
     local New = T:Test("New")
 
-    New["Should return the passed table"] = function(self)
+    New["Should return the passed table"] = function(self, lib)
         local tbl = {}
 
-        self:Delete("Addon1")
+        lib:Delete("Addon1")
 
-        local actualTable = self:New("Addon1", tbl)
+        local actualTable = lib:New("Addon1", tbl)
 
-        T:Assert(actualTable == tbl)
+        self:Assert(actualTable == tbl)
     end
 
-    New["Should return nil when the addon was already created"] = function(self)
+    New["Should return nil when the addon was already created"] = function(self, lib)
         local tbl = {}
         
-        self:New("Addon2", tbl)
+        lib:New("Addon2", tbl)
         
-        local actualTable = self:New("Addon2", tbl)
+        local actualTable = lib:New("Addon2", tbl)
 
-        T:Assert(actualTable == nil)
+        self:Assert(actualTable == nil)
     end
 
-    New["Should throw when addonName is not a string"] = function(self)
-        T:Capture(function()
-            self:New(nil, {})
+    New["Should throw when addonName is not a string"] = function(self, lib)
+        self:Capture(function()
+            lib:New(nil, {})
         end)
     end
 
-    New["Should throw when addonTable is not a table"] = function(self)
-        T:Capture(function()
-            self:New("WowLibs", nil)
+    New["Should throw when addonTable is not a table"] = function(self, lib)
+        self:Capture(function()
+            lib:New("WowLibs", nil)
         end)
     end
 end
