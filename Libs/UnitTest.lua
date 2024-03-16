@@ -6,6 +6,7 @@ assert(C, "UnitTest-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("UnitTest-1.0", 0)
 if not lib then return end
 
+local assert = assert
 local pcall = pcall
 local print = print
 local setmetatable = setmetatable
