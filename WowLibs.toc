@@ -9,10 +9,10 @@
 Libs\LibStub\LibStub.lua
 
 Libs\Contracts.lua
-Libs\Addon.lua
+#Libs\Addon.lua
 Libs\Tooltip.lua
 Libs\UnitTest.lua
 
-Tests\AddonTests.lua
+#Tests\AddonTests.lua
 Tests\TooltipTests.lua
 Tests\UnitTest.lua

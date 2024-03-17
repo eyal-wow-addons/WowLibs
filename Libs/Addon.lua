@@ -6,7 +6,8 @@ assert(C, "Addon-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("Addon-1.0", 0)
 if not lib then return end
 
-lib.Addons = {}
+lib.Addons = lib.Addons or {}
+lib.Objects = lib.Objects or {}
 
 local ipairs, pairs = ipairs, pairs
 local pcall, geterrorhandler = pcall, geterrorhandler
@@ -15,17 +16,13 @@ local setmetatable = setmetatable
 local tinsert, tremove = table.insert, table.remove
 local type = type
 
-local NewTicker = C_Timer.NewTicker
 local IsEventValid = C_EventUtils.IsEventValid
-
-local Objects = {}
-local Callbacks = {}
-Callbacks["PLAYER_LOGIN"] = {}
 
 --[[ Localization ]]
 
 local L = {
     ["ADDON_MISSING"] = "The addon '%s' is missing or does not exist.",
+    ["ADDON_DATA_DOES_NOT_EXIST"] = "The required table '__AddonData' does not exist for addon '%s'.",
 	["OBJECT_ALREADY_EXISTS"] = "the object '%s' already exists.",
 	["OBJECT_DOES_NOT_EXIST"] = "the object '%s' does not exist.",
 	["CANNOT_REGISTER_EVENT"] = "cannot register event '%s'.",
@@ -43,14 +40,19 @@ end
 
 --[[ Events Management ]]
 
+local Callbacks = {}
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function(self, eventName, ...)
     if eventName == "ADDON_LOADED" then
         local arg1 = ...
-        if lib.Addons[arg1] then
-            for _, object in ipairs(Objects) do
+        local addon = lib.Addons[arg1]
+        if addon then
+            local data = addon.__AddonData
+            for _, name in ipairs(data.names) do
+                local object = data.objects[name]
+                tinsert(lib.Objects, object)
                 local callback = object.OnInitializing
                 if callback then
                     SafeCall(callback, object)
@@ -60,10 +62,11 @@ frame:SetScript("OnEvent", function(self, eventName, ...)
         end
         return
     elseif eventName == "PLAYER_LOGIN" then
-        for _, object in ipairs(Objects) do
+        for _, object in ipairs(lib.Objects) do
             local callback = object.OnInitialized
             if callback then
                 SafeCall(callback, object)
+                object.OnInitialized = nil
             end
         end
         self:UnregisterEvent(eventName)
@@ -73,7 +76,7 @@ end)
 
 function Callbacks:RegisterCallback(callback)
     C:IsFunction(callback, 2)
-    tinsert(Callbacks["PLAYER_LOGIN"], callback)
+    tinsert(self.callbacks["PLAYER_LOGIN"], callback)
 end
 
 function Callbacks:RegisterHookScript(frame, eventName, callback)
@@ -89,10 +92,10 @@ function Callbacks:RegisterEvent(eventName, callback)
     C:IsString(eventName, 2)
     C:IsFunction(callback, 3)
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
-    local callbacks = Callbacks[eventName]
+    local callbacks = self.callbacks[eventName]
     if not callbacks then
         callbacks = {}
-        Callbacks[eventName] = callbacks
+        self.callbacks[eventName] = callbacks
         if IsEventValid(eventName) then
             frame:RegisterEvent(eventName)
         end
@@ -124,31 +127,31 @@ function Callbacks:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
     C:IsFunction(callback, 3, "function")
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
-    local callbacks = Callbacks[eventName]
+    local callbacks = self.callbacks[eventName]
     if callbacks then
         for i = #callbacks, 1, -1 do
             local registeredCallback = callbacks[i]
             if not callback or registeredCallback == callback then
-                tremove(Callbacks[eventName], i)
+                tremove(self.callbacks[eventName], i)
                 if callback then
                     break
                 end
             end
         end
-        if #Callbacks[eventName] == 0 then
+        if #self.callbacks[eventName] == 0 then
             if IsEventValid(eventName) then
                 frame:UnregisterEvent(eventName)
             end
-            Callbacks[eventName] = nil
+            self.callbacks[eventName] = nil
         elseif not callback then
-            Callbacks[eventName] = nil
+            self.callbacks[eventName] = nil
         end
     end
 end
 
 function Callbacks:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
-    local callbacks = Callbacks[eventName]
+    local callbacks = self.callbacks[eventName]
     if callbacks then
         for _, callback in ipairs(callbacks) do
             SafeCall(callback, self, eventName, ...)
@@ -161,26 +164,30 @@ end
 do
     local Api = {}
 
-    local function NewNamedObject(self, name)
+    local function NewObject(self, name)
         C:IsTable(self, 1)
         C:IsString(name, 2)
-        local object = self[name]
+
+        local data = self.__AddonData
+        C:Ensures(data, L["ADDON_DATA_DOES_NOT_EXIST"], data.name)
+
+        local object = data.objects[name]
 
         if not object then
-            object = {}
-            self[name] = object
-        else
-            C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
+            object = {
+                callbacks = data.callbacks
+            }
+            data.objects[name] = object
+            tinsert(data.names, name)
+            return setmetatable(object, { __index = Callbacks })
         end
 
-        tinsert(Objects, object)
-
-        return setmetatable(object, { __index = Callbacks })
+        C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
     end
 
     function Api:NewObject(name)
         C:IsString(name, 2)
-        local object = NewNamedObject(self, name)
+        local object = NewObject(self, name)
 
         --Mixin(object, ...)
 
@@ -195,7 +202,7 @@ do
 
     function Api:NewStorage(name)
         C:IsString(name, 2)
-        local storage = NewNamedObject(self, name .. "Storage")
+        local storage = NewObject(self, name .. "Storage")
 
         function storage:RegisterDB(defaults)
             return self.DB:RegisterNamespace(name, defaults)
@@ -212,51 +219,35 @@ do
         return storage
     end
 
-    function Api:SetDependency(dependencyName)
+    --[[function Api:SetDependency(dependencyName)
         C:IsString(dependencyName, 2)
         local dependencyTable = lib.Addons[dependencyName]
 
         if dependencyTable then
             setmetatable(self, { __index = dependencyTable })
         end
-    end
-
-    function Api:CreateTimer(callback)
-        local t = {}
-        local __handle = nil
-        local __callback = callback
-    
-        function t:Start(seconds)
-            self:Cancel()
-            __handle = NewTicker(seconds, __callback)
-        end
-    
-        function t:StartOnce(seconds)
-            self:Cancel()
-            __handle = NewTicker(seconds, __callback, 1)
-        end
-    
-        function t:Cancel()
-            if __handle then
-                __handle:Cancel()
-                __handle = nil
-            end
-        end
-    
-        return t
-    end
+    end]]
 
     function lib:New(name, tbl)
         C:IsString(name, 2)
         C:IsTable(tbl, 3)
-        if not self.Addons[name] then
-            tinsert(Objects, tbl)
+        local data = tbl.__AddonData
+        if not data then
+            data = {
+                name = name,
+                objects = { [name] = tbl },
+                names = { name },
+                callbacks = {
+                    ["PLAYER_LOGIN"] = {}
+                }
+            }
+            tbl.__AddonData = data
             self.Addons[name] = tbl
             return setmetatable(tbl, { __index = Api })
         end
     end
 
-    function lib:Delete(name)
+    --[[function lib:Delete(name)
         C:IsString(name, 2)
         local tbl = self.Addons[name]
         if tbl then
@@ -269,5 +260,5 @@ do
             return true
         end
         return false
-    end
+    end]]
 end
