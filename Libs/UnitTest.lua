@@ -6,13 +6,13 @@ assert(C, "UnitTest-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("UnitTest-1.0", 0)
 if not lib then return end
 
+lib.Modules = lib.Modules or {}
+
 local assert = assert
 local pcall = pcall
 local print = print
 local setmetatable = setmetatable
 local tinsert = table.insert
-
-local Modules = {}
 
 do
     local Module = {}
@@ -82,7 +82,7 @@ do
             ref = ref,
             hasUnitUnderTest = ref ~= nil,
         }
-        tinsert(Modules, module)
+        tinsert(self.Modules, module)
         return setmetatable(module, { __index = Module })
     end
 
@@ -94,7 +94,7 @@ end
 
 function lib:IterableTestInfo()
     local m, s, t = 1, 1, 1
-    local modules, scopes, tests = Modules, nil, nil
+    local modules, scopes, tests = self.Modules, nil, nil
     local module, scope, test = nil, nil, nil
     return function()
         while m <= #modules do
@@ -148,7 +148,7 @@ do
     function lib:Run(resultsHandler)
         resultsHandler = resultsHandler or PrintHandler
         local lastModule, lastScope
-        local totalTests, totalModules, totalScopes, passedCounter, failedCounter = 0, #Modules, 0, 0, 0
+        local totalTests, totalModules, totalScopes, passedCounter, failedCounter = 0, #self.Modules, 0, 0, 0
         for module, scope, test in self:IterableTestInfo() do
             if not lastModule or lastModule ~= module then
                 totalScopes = totalScopes + #module.scopes
