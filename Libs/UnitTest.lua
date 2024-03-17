@@ -6,7 +6,7 @@ assert(C, "UnitTest-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("UnitTest-1.0", 0)
 if not lib then return end
 
-lib.Modules = lib.Modules or {}
+lib.Addons = lib.Addons or {}
 
 local assert = assert
 local pcall = pcall
@@ -16,6 +16,7 @@ local tinsert = table.insert
 
 do
     local Module = {}
+    local TestSuite = {}
     local AssertionApi = {}
 
     function AssertionApi:Assert(condition)
@@ -52,12 +53,11 @@ do
 
         function Module:CreateScope(name)
             C:IsString(name, 2)
-            local module = self
             local scope = {
                 name = name,
                 tests = {}
             }
-            tinsert(module.scopes, scope)
+            tinsert(self.scopes, scope)
             return setmetatable(scope, { __newindex = function(_, testName, testFunc)
                 AddTest(scope, testName, testFunc)
             end })
@@ -73,7 +73,7 @@ do
         return self.ref
     end
 
-    function lib:CreateModule(name, tbl)
+    function TestSuite:CreateModule(name, tbl)
         C:IsString(name, 2)
         local ref = tbl or LibStub(name, true)
         local module = {
@@ -82,87 +82,118 @@ do
             ref = ref,
             hasUnitUnderTest = ref ~= nil,
         }
-        tinsert(self.Modules, module)
+        tinsert(self.modules, module)
         return setmetatable(module, { __index = Module })
     end
 
-    function lib:Test(name, tbl)
+    function TestSuite:Test(name, tbl)
         C:IsString(name, 2)
         return self:CreateModule(name, tbl)
+    end
+
+    function lib:Configure(addonName, addonTable)
+        C:IsString(addonName, 2)
+        C:IsTable(addonTable, 3)
+        local testSuite = addonTable.TestSuite
+        if not testSuite then
+            testSuite = {
+                name = addonName,
+                modules = {}
+            }
+            addonTable.TestSuite = testSuite
+            setmetatable(testSuite, { __index = TestSuite })
+            tinsert(lib.Addons, testSuite)
+        end
+        return testSuite
     end
 end
 
 function lib:IterableTestInfo()
-    local m, s, t = 1, 1, 1
-    local modules, scopes, tests = self.Modules, nil, nil
-    local module, scope, test = nil, nil, nil
+    local a, m, s, t = 1, 1, 1, 1
+    local addons, modules, scopes, tests = self.Addons, nil, nil, nil
+    local addon, module, scope, test = nil, nil, nil, nil
     return function()
-        while m <= #modules do
-            module = modules[m]
-            scopes = module.scopes
-            while s <= #scopes do
-                scope = scopes[s]
-                tests = scope.tests 
-                while t <= #tests do
-                    test = tests[t]
-                    t = t + 1
-                    return module, scope, test
+        while a <= #addons do
+            addon = addons[a]
+            modules = addon.modules
+            while m <= #modules do
+                module = modules[m]
+                scopes = module.scopes
+                while s <= #scopes do
+                    scope = scopes[s]
+                    tests = scope.tests
+                    while t <= #tests do
+                        test = tests[t]
+                        t = t + 1
+                        return addon, module, scope, test
+                    end
+                    s, t = s + 1, 1
+                    return addon, module, scope
                 end
-                s, t = s + 1, 1
-                return module, scope
+                m, s, t = m + 1, 1, 1
+                return addon, module
             end
-            m, s, t = m + 1, 1, 1
-            return module
+            a, m, s, t = a + 1, 1, 1, 1
+            return addon
         end
     end
 end
 
 do
     local function PrintHandler(type, ...)
-        if type == "module" then
-            local moduleName, totalTests = ...
-            print("----------------------------------------------------------------------------------")
-            print("+ " .. moduleName .. " (Scopes: " .. totalTests .. ")")
+        if type == "addon" then
+            local addonName, totalTests = ...
+            print("-----------------------------------------------------------------------------------------------")
+            print("+ " .. addonName .. " (Modules: " .. totalTests .. ")")
+        elseif type == "module" then
+            local addonName, moduleName, totalTests = ...
+            print("-----------------------------------------------------------------------------------------------")
+            print("    + " .. moduleName .. " (Scopes: " .. totalTests .. ")")
         elseif type == "scope" then
-            local moduleName, scopeName, totalTests = ...
-            print("   + " .. scopeName .. " (Tests: " .. totalTests .. ")")
+            local addonName, moduleName, scopeName, totalTests = ...
+            print("        + " .. scopeName .. " (Tests: " .. totalTests .. ")")
         elseif type == "test" then
-            local moduleName, scopeName, testName, err = ...
-            print("      + " .. testName .. ": " .. err)
+            local addonName, moduleName, scopeName, testName, err = ...
+            print("            + " .. testName .. ": " .. err)
         elseif type == "summary" then
-            print("----------------------------------------------------------------------------------")
-            local totalTests, totalModules, totalScopes, passedCounter, failedCounter = ...
-            print(("Tests: %d | Modules: %d | Scopes: %d | Passed: %d | Failed: %d"):format(totalTests, totalModules, totalScopes, passedCounter, failedCounter))
-            print("----------------------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
+            local totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter = ...
+            print(("Tests: %d | Addons: %d | Modules: %d | Scopes: %d | Passed: %d | Failed: %d"):format(totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter))
+            print("-----------------------------------------------------------------------------------------------")
         end
     end
 
-    local function ExecuteTest(type, module, scope, test, resultsHandler)
+    local function ExecuteTest(type, addon, module, scope, test, resultsHandler)
         local success, err = pcall(test.func, test.api, module.ref)
         if not success then
-            resultsHandler(type, module.name, scope.name, test.name, err)
+            resultsHandler(type, addon.name, module.name, scope.name, test.name, err)
         end
         return test.api.__calls > 0, success
     end
 
     function lib:Run(resultsHandler)
         resultsHandler = resultsHandler or PrintHandler
-        local lastModule, lastScope
-        local totalTests, totalModules, totalScopes, passedCounter, failedCounter = 0, #self.Modules, 0, 0, 0
-        for module, scope, test in self:IterableTestInfo() do
-            if not lastModule or lastModule ~= module then
+        local lastAddon, lastModule, lastScope
+        local totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter = 0, #self.Addons, 0, 0, 0, 0
+        for addon, module, scope, test in self:IterableTestInfo() do
+            if not lastAddon or lastAddon ~= addon then
+                totalModules = totalModules + #addon.modules
+                resultsHandler("addon", addon.name, #addon.modules)
+                lastAddon = addon
+            end
+            if module and (not lastModule or lastModule ~= module) then
                 totalScopes = totalScopes + #module.scopes
-                resultsHandler("module", module.name, #module.scopes)
+                resultsHandler("module", addon.name, module.name, #module.scopes)
                 lastModule = module
             end
             if scope and (not lastScope or lastScope ~= scope) then
-                resultsHandler("scope", module.name, scope.name, #scope.tests)
+                resultsHandler("scope", addon.name, module.name, scope.name, #scope.tests)
                 lastScope = scope
             end
             if test then
                 totalTests = totalTests + 1
                 -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution
-                local valid, success = ExecuteTest("test", module, scope, test, resultsHandler)
+                local valid, success = ExecuteTest("test", addon, module, scope, test, resultsHandler)
                 if valid then
                     if success then
                         passedCounter = passedCounter + 1
@@ -172,6 +203,6 @@ do
                 end
             end
         end
-        resultsHandler("summary", totalTests, totalModules, totalScopes, passedCounter, failedCounter)
+        resultsHandler("summary", totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter)
     end
 end

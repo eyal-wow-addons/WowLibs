@@ -1,4 +1,4 @@
-local T = LibStub("UnitTest-1.0"):Test("Addon-1.0")
+local T = LibStub("UnitTest-1.0"):Configure(...):Test("Addon-1.0")
 
 do
     local Addon = T:Test("Addon")
