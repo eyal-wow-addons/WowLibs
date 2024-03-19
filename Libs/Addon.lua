@@ -254,8 +254,7 @@ do
                     end
                 end,
                 Frame_Release = function()
-                    frame:UnregisterEvent("ADDON_LOADED")
-                    frame:UnregisterEvent("PLAYER_LOGIN")
+                    frame:UnregisterAllEvents()
                     frame:SetScript("OnEvent", nil)
                     frame.__AddonInfo = nil
                     frame = nil
@@ -276,16 +275,16 @@ do
         if addonTable then
             local info = addonTable.__AddonInfo
             if info then
+                info:Frame_Release()
                 for i = #info.names, 1, -1 do
                     local objName = info.names[i]
-                    local object = info.objects[objName]
-                    for eventName in pairs(info.callbacks) do
-                        object:UnregisterEvent(eventName)
-                        info.callbacks[eventName] = nil
-                    end
+                    info.objects[objName] = nil
                     tremove(info.names, i)
                 end
-                info:Frame_Release()
+                for eventName in pairs(info.callbacks) do
+                    twipe(info.callbacks[eventName])
+                    info.callbacks[eventName] = nil
+                end
                 for k in pairs(info) do
                     info[k] = nil
                 end
