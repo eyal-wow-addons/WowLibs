@@ -100,7 +100,7 @@ function Callbacks:RegisterEvent(eventName, callback)
         callbacks = {}
         self.callbacks[eventName] = callbacks
         if IsEventValid(eventName) then
-            self:RegisterEvent(eventName)
+            self:Frame_RegisterEvent(eventName)
         end
     end
     tinsert(callbacks, callback)
@@ -142,7 +142,7 @@ function Callbacks:UnregisterEvent(eventName, callback)
         end
         if not callback or #callbacks == 0 then
             if IsEventValid(eventName) then
-                self:UnregisterEvent(eventName)
+                self:Frame_UnregisterEvent(eventName)
             end
             self.callbacks[eventName] = nil
         end
@@ -177,8 +177,8 @@ do
             object = {
                 name = name,
                 callbacks = info.callbacks,
-                RegisterEvent = info.RegisterEvent,
-                UnregisterEvent = info.UnregisterEvent
+                Frame_RegisterEvent = info.Frame_RegisterEvent,
+                Frame_UnregisterEvent = info.Frame_UnregisterEvent
             }
             info.objects[name] = object
             tinsert(info.names, name)
@@ -239,17 +239,21 @@ do
                 callbacks = {
                     ["PLAYER_LOGIN"] = {}
                 },
-                RegisterEvent = function(eventName)
+                Frame_RegisterEvent = function(_, eventName)
+                    C:IsString(eventName, 2)
+                    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
                     if frame then
                         frame:RegisterEvent(eventName)
                     end
                 end,
-                UnregisterEvent = function(eventName)
+                Frame_UnregisterEvent = function(_, eventName)
+                    C:IsString(eventName, 2)
+                    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
                     if frame then
                         frame:UnregisterEvent(eventName)
                     end
                 end,
-                ReleaseFrame = function()
+                Frame_Release = function()
                     frame:UnregisterEvent("ADDON_LOADED")
                     frame:UnregisterEvent("PLAYER_LOGIN")
                     frame:SetScript("OnEvent", nil)
@@ -281,7 +285,7 @@ do
                     end
                     tremove(info.names, i)
                 end
-                info:ReleaseFrame()
+                info:Frame_Release()
                 for k in pairs(info) do
                     info[k] = nil
                 end
