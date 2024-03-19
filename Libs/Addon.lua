@@ -222,15 +222,6 @@ do
         return storage
     end
 
-    --[[function Api:SetDependency(dependencyName)
-        C:IsString(dependencyName, 2)
-        local dependencyTable = lib.Addons[dependencyName]
-
-        if dependencyTable then
-            setmetatable(self, { __index = dependencyTable })
-        end
-    end]]
-
     function lib:New(addonName, addonTable)
         C:IsString(addonName, 2)
         C:IsTable(addonTable, 3)
