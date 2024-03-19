@@ -1,11 +1,11 @@
 ---@diagnostic disable: undefined-field
 
-assert(LibStub, "Player-1.0 requires LibStub")
+assert(LibStub, "PlayerInfo-1.0 requires LibStub")
 
 local C = LibStub("Contracts-1.0")
-assert(C, "Addon-1.0 requires Contracts-1.0")
+assert(C, "PlayerInfo-1.0 requires Contracts-1.0")
 
-local lib = LibStub:NewLibrary("Player-1.0", 0)
+local lib = LibStub:NewLibrary("PlayerInfo-1.0", 0)
 if not lib then return end
 
 local ipairs = ipairs
