@@ -58,31 +58,36 @@ function lib:IterableConnectedRealms(preIterationCallback)
     end
 end
 
-function lib:GetName()
+function lib:GetPlayerName()
     return charName
 end
 
-function lib:GetRealm(trimmed)
+function lib:GetPlayerRealm(trimmed)
     return trimmed and charRealm2 or charRealm1
 end
 
-function lib:GetFullName()
+function lib:GetPlayerFullName()
     return charFullName
+end
+
+function lib:IsPlayerOnConnectedRealm()
+    local name = self:GetPlayerFullName()
+    return IsRealmConnectedRealm(name:match(REALM_PATTERN), true)
 end
 
 function lib:IsSameCharacter(name)
     C:IsString(name, 2)
-    return name == self:GetFullName()
+    return name == self:GetPlayerFullName()
 end
 
-function lib:IsOnCurrentRealm(name)
+function lib:IsCharacterOnCurrentRealm(name)
     C:IsString(name, 2)
-    return name:find(self:GetRealm())
+    return name:find(self:GetPlayerRealm())
 end
 
-function lib:IsOnConnectedRealm(name)
+function lib:IsCharacterOnConnectedRealm(name, includeOwn)
     C:IsString(name, 2)
-    return IsRealmConnectedRealm(name:match(REALM_PATTERN))
+    return IsRealmConnectedRealm(name:match(REALM_PATTERN), includeOwn)
 end
 
 function lib:RemoveRealm(name)
