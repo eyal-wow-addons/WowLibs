@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-field
 assert(LibStub, "Addon-1.0 requires LibStub")
 
 local C = LibStub("Contracts-1.0")
@@ -7,7 +8,6 @@ local lib = LibStub:NewLibrary("Addon-1.0", 0)
 if not lib then return end
 
 lib.Addons = lib.Addons or {}
-lib.Objects = lib.Objects or {}
 
 local ipairs, pairs = ipairs, pairs
 local pcall, geterrorhandler = pcall, geterrorhandler
@@ -15,6 +15,7 @@ local select = select
 local setmetatable = setmetatable
 local tinsert, tremove = table.insert, table.remove
 local type = type
+local twipe = table.wipe
 
 local IsEventValid = C_EventUtils.IsEventValid
 
@@ -22,7 +23,7 @@ local IsEventValid = C_EventUtils.IsEventValid
 
 local L = {
     ["ADDON_MISSING"] = "The addon '%s' is missing or does not exist.",
-    ["ADDON_DATA_DOES_NOT_EXIST"] = "The required table '__AddonData' does not exist for addon '%s'.",
+    ["ADDON_INFO_DOES_NOT_EXIST"] = "The required table '__AddonInfo' does not exist for addon '%s'.",
 	["OBJECT_ALREADY_EXISTS"] = "the object '%s' already exists.",
 	["OBJECT_DOES_NOT_EXIST"] = "the object '%s' does not exist.",
 	["CANNOT_REGISTER_EVENT"] = "cannot register event '%s'.",
@@ -41,18 +42,14 @@ end
 --[[ Events Management ]]
 
 local Callbacks = {}
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_LOGIN")
-frame:RegisterEvent("ADDON_LOADED")
-frame:SetScript("OnEvent", function(self, eventName, ...)
+local function OnEvent(self, eventName, ...)
+    local info = self.__AddonInfo
     if eventName == "ADDON_LOADED" then
         local arg1 = ...
         local addon = lib.Addons[arg1]
         if addon then
-            local data = addon.__AddonData
-            for _, name in ipairs(data.names) do
-                local object = data.objects[name]
-                tinsert(lib.Objects, object)
+            for _, name in ipairs(info.names) do
+                local object = info.objects[name]
                 local callback = object.OnInitializing
                 if callback then
                     SafeCall(callback, object)
@@ -62,7 +59,8 @@ frame:SetScript("OnEvent", function(self, eventName, ...)
         end
         return
     elseif eventName == "PLAYER_LOGIN" then
-        for _, object in ipairs(lib.Objects) do
+        for _, name in ipairs(info.names) do
+            local object = info.objects[name]
             local callback = object.OnInitialized
             if callback then
                 SafeCall(callback, object)
@@ -71,8 +69,13 @@ frame:SetScript("OnEvent", function(self, eventName, ...)
         end
         self:UnregisterEvent(eventName)
     end
-    Callbacks:TriggerEvent(eventName, ...)
-end)
+    for _, name in ipairs(info.names) do
+        local object = info.objects[name]
+        if object.TriggerEvent then
+            object:TriggerEvent(eventName, ...)
+        end
+    end
+end
 
 function Callbacks:RegisterCallback(callback)
     C:IsFunction(callback, 2)
@@ -97,7 +100,7 @@ function Callbacks:RegisterEvent(eventName, callback)
         callbacks = {}
         self.callbacks[eventName] = callbacks
         if IsEventValid(eventName) then
-            frame:RegisterEvent(eventName)
+            self:RegisterEvent(eventName)
         end
     end
     tinsert(callbacks, callback)
@@ -125,25 +128,22 @@ end
 
 function Callbacks:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
-    C:IsFunction(callback, 3, "function")
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
     local callbacks = self.callbacks[eventName]
     if callbacks then
         for i = #callbacks, 1, -1 do
             local registeredCallback = callbacks[i]
             if not callback or registeredCallback == callback then
-                tremove(self.callbacks[eventName], i)
+                tremove(callbacks, i)
                 if callback then
                     break
                 end
             end
         end
-        if #self.callbacks[eventName] == 0 then
+        if not callback or #callbacks == 0 then
             if IsEventValid(eventName) then
-                frame:UnregisterEvent(eventName)
+                self:UnregisterEvent(eventName)
             end
-            self.callbacks[eventName] = nil
-        elseif not callback then
             self.callbacks[eventName] = nil
         end
     end
@@ -168,17 +168,20 @@ do
         C:IsTable(self, 1)
         C:IsString(name, 2)
 
-        local data = self.__AddonData
-        C:Ensures(data, L["ADDON_DATA_DOES_NOT_EXIST"], data.name)
+        local info = self.__AddonInfo
+        C:Ensures(info, L["ADDON_INFO_DOES_NOT_EXIST"], info.name)
 
-        local object = data.objects[name]
+        local object = info.objects[name]
 
         if not object then
             object = {
-                callbacks = data.callbacks
+                name = name,
+                callbacks = info.callbacks,
+                RegisterEvent = info.RegisterEvent,
+                UnregisterEvent = info.UnregisterEvent
             }
-            data.objects[name] = object
-            tinsert(data.names, name)
+            info.objects[name] = object
+            tinsert(info.names, name)
             return setmetatable(object, { __index = Callbacks })
         end
 
@@ -228,37 +231,74 @@ do
         end
     end]]
 
-    function lib:New(name, tbl)
-        C:IsString(name, 2)
-        C:IsTable(tbl, 3)
-        local data = tbl.__AddonData
-        if not data then
-            data = {
-                name = name,
-                objects = { [name] = tbl },
-                names = { name },
+    function lib:New(addonName, addonTable)
+        C:IsString(addonName, 2)
+        C:IsTable(addonTable, 3)
+        local info = addonTable.__AddonInfo
+        if not info then
+            local frame = CreateFrame("Frame")
+            frame:RegisterEvent("ADDON_LOADED")
+            frame:RegisterEvent("PLAYER_LOGIN")
+            frame:SetScript("OnEvent", OnEvent)
+            
+            info = {
+                name = addonName,
+                objects = { [addonName] = addonTable },
+                names = { addonName },
                 callbacks = {
                     ["PLAYER_LOGIN"] = {}
-                }
+                },
+                RegisterEvent = function(eventName)
+                    if frame then
+                        frame:RegisterEvent(eventName)
+                    end
+                end,
+                UnregisterEvent = function(eventName)
+                    if frame then
+                        frame:UnregisterEvent(eventName)
+                    end
+                end,
+                ReleaseFrame = function()
+                    frame:UnregisterEvent("ADDON_LOADED")
+                    frame:UnregisterEvent("PLAYER_LOGIN")
+                    frame:SetScript("OnEvent", nil)
+                    frame.__AddonInfo = nil
+                    frame = nil
+                end
             }
-            tbl.__AddonData = data
-            self.Addons[name] = tbl
-            return setmetatable(tbl, { __index = Api })
+
+            frame.__AddonInfo = info
+            addonTable.__AddonInfo = info
+
+            self.Addons[addonName] = addonTable
+            return setmetatable(addonTable, { __index = Api })
         end
     end
 
-    --[[function lib:Delete(name)
-        C:IsString(name, 2)
-        local tbl = self.Addons[name]
-        if tbl then
-            for i = 1, #Objects, 1 do
-                if Objects[i] == tbl then
-                    table.remove(Objects, i)
+    function lib:Delete(addonName)
+        C:IsString(addonName, 2)
+        local addonTable = self.Addons[addonName]
+        if addonTable then
+            local info = addonTable.__AddonInfo
+            if info then
+                for i = #info.names, 1, -1 do
+                    local objName = info.names[i]
+                    local object = info.objects[objName]
+                    for eventName in pairs(info.callbacks) do
+                        object:UnregisterEvent(eventName)
+                        info.callbacks[eventName] = nil
+                    end
+                    tremove(info.names, i)
+                end
+                info:ReleaseFrame()
+                for k in pairs(info) do
+                    info[k] = nil
                 end
             end
-            self.Addons[name] = nil
+            addonTable.__AddonInfo = nil
+            self.Addons[addonName] = nil
             return true
         end
         return false
-    end]]
+    end
 end
