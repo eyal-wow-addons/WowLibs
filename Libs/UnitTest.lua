@@ -86,11 +86,6 @@ do
         return setmetatable(module, { __index = Module })
     end
 
-    function TestSuite:Test(name, tbl)
-        C:IsString(name, 2)
-        return self:CreateModule(name, tbl)
-    end
-
     function lib:Configure(addonName, addonTable)
         C:IsString(addonName, 2)
         C:IsTable(addonTable, 3)
@@ -105,6 +100,28 @@ do
             tinsert(lib.Addons, testSuite)
         end
         return testSuite
+    end
+
+    function lib:TestLibrary(libName, ...)
+        C:IsString(libName, 2)
+        return self:Configure(...):CreateModule(libName)
+    end
+
+    function lib:TestTable(tblName, tbl, ...)
+        C:IsString(tblName, 2)
+        C:IsTable(tbl, 3)
+        return self:Configure(...):CreateModule(tblName, tbl)
+    end
+
+    function UnitTest_Library(libName, ...)
+        C:IsString(libName, 2)
+        return LibStub("UnitTest-1.0"):TestLibrary(libName, ...)
+    end
+    
+    function UnitTest_Table(tblName, tbl, ...)
+        C:IsString(tblName, 2)
+        C:IsTable(tbl, 3)
+        return LibStub("UnitTest-1.0"):TestTable(tblName, tbl, ...)
     end
 end
 
@@ -205,4 +222,8 @@ do
         end
         resultsHandler("summary", totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter)
     end
+end
+
+function UnitTest_Run(resultsHandler)
+    LibStub("UnitTest-1.0"):Run(resultsHandler)
 end

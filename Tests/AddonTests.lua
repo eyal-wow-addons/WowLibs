@@ -1,4 +1,4 @@
-local T = LibStub("UnitTest-1.0"):Configure(...):Test("Addon-1.0")
+local T = UnitTest_Library("Addon-1.0", ...)
 
 do
     local Addon = T:Test("Addon")
@@ -63,7 +63,7 @@ do
             end
         end
 
-        self:Assert(isEventsOrdered == true)
+        self:Assert(isEventsOrdered)
     end
 end
 

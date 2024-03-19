@@ -1,4 +1,4 @@
-local T = LibStub("UnitTest-1.0"):Configure(...):Test("Tooltip-1.0")
+local T = UnitTest_Library("Tooltip-1.0", ...)
 
 do
     local UseTooltip = T:Test("UseTooltip")

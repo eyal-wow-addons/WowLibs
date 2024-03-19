@@ -1,4 +1,4 @@
-local T = LibStub("UnitTest-1.0"):Configure(...):Test("UnitTest-1.0")
+local T = UnitTest_Library("UnitTest-1.0", ...)
 
 do
     local CreateModule = T:Test("CreateModule")
