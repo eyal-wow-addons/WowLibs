@@ -126,32 +126,33 @@ do
 end
 
 function lib:IterableTestInfo()
-    local a, m, s, t = 1, 1, 1, 1
     local addons, modules, scopes, tests = self.Addons, nil, nil, nil
-    local addon, module, scope, test = nil, nil, nil, nil
+    local addon, module, scope = nil, nil, nil
+    local a, m, s, t = 1, 1, 1, 1
     return function()
         while a <= #addons do
             addon = addons[a]
-            modules = addon.modules
-            while m <= #modules do
+
+            modules = addon and addon.modules or modules
+            scopes = module and module.scopes or scopes
+            tests = scope and scope.tests or tests
+
+            if tests and t <= #tests then
+                local test = tests[t]
+                t = t + 1
+                return addon, module, scope, test
+            elseif scopes and s <= #scopes then
+                tests = nil
+                scope = scopes[s]
+                s, t = s + 1, 1
+            elseif modules and m <= #modules then
+                scopes, scope, tests = nil, nil, nil
                 module = modules[m]
-                scopes = module.scopes
-                while s <= #scopes do
-                    scope = scopes[s]
-                    tests = scope.tests
-                    while t <= #tests do
-                        test = tests[t]
-                        t = t + 1
-                        return addon, module, scope, test
-                    end
-                    s, t = s + 1, 1
-                    return addon, module, scope
-                end
                 m, s, t = m + 1, 1, 1
-                return addon, module
+            else
+                modules, module, scopes, scope, tests = nil, nil, nil, nil, nil
+                a, m, s, t = a + 1, 1, 1, 1
             end
-            a, m, s, t = a + 1, 1, 1, 1
-            return addon
         end
     end
 end
@@ -193,30 +194,28 @@ do
         local lastAddon, lastModule, lastScope
         local totalTests, totalAddons, totalModules, totalScopes, passedCounter, failedCounter = 0, #self.Addons, 0, 0, 0, 0
         for addon, module, scope, test in self:IterableTestInfo() do
-            if not lastAddon or lastAddon ~= addon then
+            if lastAddon ~= addon then
                 totalModules = totalModules + #addon.modules
                 resultsHandler("addon", addon.name, #addon.modules)
                 lastAddon = addon
             end
-            if module and (not lastModule or lastModule ~= module) then
+            if lastModule ~= module then
                 totalScopes = totalScopes + #module.scopes
                 resultsHandler("module", addon.name, module.name, #module.scopes)
                 lastModule = module
             end
-            if scope and (not lastScope or lastScope ~= scope) then
+            if lastScope ~= scope then
                 resultsHandler("scope", addon.name, module.name, scope.name, #scope.tests)
                 lastScope = scope
             end
-            if test then
-                totalTests = totalTests + 1
-                -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution
-                local valid, success = ExecuteTest("test", addon, module, scope, test, resultsHandler)
-                if valid then
-                    if success then
-                        passedCounter = passedCounter + 1
-                    else
-                        failedCounter = failedCounter + 1
-                    end
+            totalTests = totalTests + 1
+            -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution
+            local valid, success = ExecuteTest("test", addon, module, scope, test, resultsHandler)
+            if valid then
+                if success then
+                    passedCounter = passedCounter + 1
+                else
+                    failedCounter = failedCounter + 1
                 end
             end
         end
