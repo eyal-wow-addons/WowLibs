@@ -26,7 +26,7 @@ local IsEventValid = C_EventUtils.IsEventValid
 
 local L = {
     ["ADDON_MISSING"] = "The addon '%s' is missing or does not exist.",
-    ["ADDON_INFO_DOES_NOT_EXIST"] = "The required table '__AddonInfo' does not exist for addon '%s'.",
+    ["ADDON_CONTEXT_DOES_NOT_EXIST"] = "The required table '__AddonContext' does not exist for addon '%s'.",
 	["OBJECT_ALREADY_EXISTS"] = "the object '%s' already exists.",
 	["OBJECT_DOES_NOT_EXIST"] = "the object '%s' does not exist.",
 	["CANNOT_REGISTER_EVENT"] = "cannot register event '%s'.",
@@ -49,20 +49,20 @@ do
         C:IsTable(self, 1)
         C:IsString(name, 2)
 
-        local info = self.__AddonInfo
-        C:Ensures(info, L["ADDON_INFO_DOES_NOT_EXIST"], info.name)
+        local context = self.__AddonContext
+        C:Ensures(context, L["ADDON_CONTEXT_DOES_NOT_EXIST"], context.name)
 
-        local object = info.objects[name]
+        local object = context.objects[name]
 
         if not object then
             object = {
                 name = name,
-                callbacks = info.callbacks,
-                Frame_RegisterEvent = info.Frame_RegisterEvent,
-                Frame_UnregisterEvent = info.Frame_UnregisterEvent
+                callbacks = context.callbacks,
+                Frame_RegisterEvent = context.Frame_RegisterEvent,
+                Frame_UnregisterEvent = context.Frame_UnregisterEvent
             }
-            info.objects[name] = object
-            tinsert(info.names, name)
+            context.objects[name] = object
+            tinsert(context.names, name)
             return setmetatable(object, { __index = Callbacks })
         end
 
@@ -191,8 +191,8 @@ end
 --[[ Library API ]]
 
 do
-    local function IterableObjects(info)
-        local names, objects = info.names, info.objects
+    local function IterableObjects(context)
+        local names, objects = context.names, context.objects
         local i, n = 1, #names
         return function()
             if i <= n then
@@ -204,12 +204,12 @@ do
     end
 
     local function OnEvent(self, eventName, ...)
-        local info = self.__AddonInfo
+        local context = self.__AddonContext
         if eventName == "ADDON_LOADED" then
             local arg1 = ...
             local addon = lib.Addons[arg1]
             if addon then
-                for object in IterableObjects(info) do
+                for object in IterableObjects(context) do
                     local onInitializing = object.OnInitializing
                     if onInitializing then
                         SafeCall(onInitializing, object)
@@ -219,7 +219,7 @@ do
             end
             return
         elseif eventName == "PLAYER_LOGIN" then
-            for object in IterableObjects(info) do
+            for object in IterableObjects(context) do
                 local onInitialized = object.OnInitialized
                 if onInitialized then
                     SafeCall(onInitialized, object)
@@ -228,7 +228,7 @@ do
             end
             self:UnregisterEvent(eventName)
         end
-        for object in IterableObjects(info) do
+        for object in IterableObjects(context) do
             if object.TriggerEvent then
                 object:TriggerEvent(eventName, ...)
             end
@@ -238,14 +238,14 @@ do
     function lib:New(addonName, addonTable)
         C:IsString(addonName, 2)
         C:IsTable(addonTable, 3)
-        local info = addonTable.__AddonInfo
-        if not info then
+        local context = addonTable.__AddonContext
+        if not context then
             local frame = CreateFrame("Frame")
             frame:RegisterEvent("ADDON_LOADED")
             frame:RegisterEvent("PLAYER_LOGIN")
             frame:SetScript("OnEvent", OnEvent)
             
-            info = {
+            context = {
                 name = addonName,
                 objects = { [addonName] = addonTable },
                 names = { addonName },
@@ -269,13 +269,13 @@ do
                 Frame_Release = function()
                     frame:UnregisterAllEvents()
                     frame:SetScript("OnEvent", nil)
-                    frame.__AddonInfo = nil
+                    frame.__AddonContext = nil
                     frame = nil
                 end
             }
 
-            frame.__AddonInfo = info
-            addonTable.__AddonInfo = info
+            frame.__AddonContext = context
+            addonTable.__AddonContext = context
 
             self.Addons[addonName] = addonTable
             return setmetatable(addonTable, { __index = Core })
@@ -286,23 +286,23 @@ do
         C:IsString(addonName, 2)
         local addonTable = self.Addons[addonName]
         if addonTable then
-            local info = addonTable.__AddonInfo
-            if info then
-                info:Frame_Release()
-                for i = #info.names, 1, -1 do
-                    local objName = info.names[i]
-                    info.objects[objName] = nil
-                    tremove(info.names, i)
+            local context = addonTable.__AddonContext
+            if context then
+                incontexto:Frame_Release()
+                for i = #context.names, 1, -1 do
+                    local objName = context.names[i]
+                    context.objects[objName] = nil
+                    tremove(context.names, i)
                 end
-                for eventName in pairs(info.callbacks) do
-                    twipe(info.callbacks[eventName])
-                    info.callbacks[eventName] = nil
+                for eventName in pairs(context.callbacks) do
+                    twipe(context.callbacks[eventName])
+                    context.callbacks[eventName] = nil
                 end
-                for k in pairs(info) do
-                    info[k] = nil
+                for k in pairs(context) do
+                    context[k] = nil
                 end
             end
-            addonTable.__AddonInfo = nil
+            addonTable.__AddonContext = nil
             self.Addons[addonName] = nil
             return true
         end
