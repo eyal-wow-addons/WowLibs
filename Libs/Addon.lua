@@ -9,6 +9,9 @@ if not lib then return end
 
 lib.Addons = lib.Addons or {}
 
+local Core = {}
+local Callbacks = {}
+
 local ipairs, pairs = ipairs, pairs
 local pcall, geterrorhandler = pcall, geterrorhandler
 local select = select
@@ -30,7 +33,7 @@ local L = {
     ["CANNOT_UNREGISTER_EVENT"] = "cannot unregister event '%s'."
 }
 
---[[ Library Helper Methods ]]
+--[[ Library Helpers ]]
 
 local function SafeCall(func, ...)
 	local success, err = pcall(func, ...)
@@ -39,53 +42,69 @@ local function SafeCall(func, ...)
 	end
 end
 
---[[ Events Management ]]
+--[[ Core API ]]
 
-local Callbacks = {}
+do
+    local function NewObject(self, name)
+        C:IsTable(self, 1)
+        C:IsString(name, 2)
 
-local function IterableObjects(info)
-    local names, objects = info.names, info.objects
-    local i, n = 1, #names
-    return function()
-        if i <= n then
-            local name = names[i]
-            i = i + 1
-            return objects[name]
+        local info = self.__AddonInfo
+        C:Ensures(info, L["ADDON_INFO_DOES_NOT_EXIST"], info.name)
+
+        local object = info.objects[name]
+
+        if not object then
+            object = {
+                name = name,
+                callbacks = info.callbacks,
+                Frame_RegisterEvent = info.Frame_RegisterEvent,
+                Frame_UnregisterEvent = info.Frame_UnregisterEvent
+            }
+            info.objects[name] = object
+            tinsert(info.names, name)
+            return setmetatable(object, { __index = Callbacks })
         end
+
+        C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
+    end
+
+    function Core:NewObject(name)
+        C:IsString(name, 2)
+        local object = NewObject(self, name)
+
+        --Mixin(object, ...)
+
+        local storage = self[name .. "Storage"]
+
+        if storage then
+            object.storage = storage
+        end
+
+        return object
+    end
+
+    function Core:NewStorage(name)
+        C:IsString(name, 2)
+        local storage = NewObject(self, name .. "Storage")
+
+        function storage:RegisterDB(defaults)
+            return self.DB:RegisterNamespace(name, defaults)
+        end
+
+        return storage
+    end
+
+    function Core:GetStorage(name)
+        C:IsString(name, 2)
+        local fullName = name .. "Storage"
+        local storage = self[fullName]
+        C:Ensures(storage ~= nil, L["OBJECT_DOES_NOT_EXIST"], fullName)
+        return storage
     end
 end
 
-local function OnEvent(self, eventName, ...)
-    local info = self.__AddonInfo
-    if eventName == "ADDON_LOADED" then
-        local arg1 = ...
-        local addon = lib.Addons[arg1]
-        if addon then
-            for object in IterableObjects(info) do
-                local onInitializing = object.OnInitializing
-                if onInitializing then
-                    SafeCall(onInitializing, object)
-                    object.OnInitializing = nil
-                end
-            end
-        end
-        return
-    elseif eventName == "PLAYER_LOGIN" then
-        for object in IterableObjects(info) do
-            local onInitialized = object.OnInitialized
-            if onInitialized then
-                SafeCall(onInitialized, object)
-                object.OnInitialized = nil
-            end
-        end
-        self:UnregisterEvent(eventName)
-    end
-    for object in IterableObjects(info) do
-        if object.TriggerEvent then
-            object:TriggerEvent(eventName, ...)
-        end
-    end
-end
+--[[ Callbacks API ]]
 
 function Callbacks:RegisterCallback(callback)
     C:IsFunction(callback, 2)
@@ -169,67 +188,51 @@ function Callbacks:TriggerEvent(eventName, ...)
     end
 end
 
---[[ Core API ]]
+--[[ Library API ]]
 
 do
-    local Api = {}
+    local function IterableObjects(info)
+        local names, objects = info.names, info.objects
+        local i, n = 1, #names
+        return function()
+            if i <= n then
+                local name = names[i]
+                i = i + 1
+                return objects[name]
+            end
+        end
+    end
 
-    local function NewObject(self, name)
-        C:IsTable(self, 1)
-        C:IsString(name, 2)
-
+    local function OnEvent(self, eventName, ...)
         local info = self.__AddonInfo
-        C:Ensures(info, L["ADDON_INFO_DOES_NOT_EXIST"], info.name)
-
-        local object = info.objects[name]
-
-        if not object then
-            object = {
-                name = name,
-                callbacks = info.callbacks,
-                Frame_RegisterEvent = info.Frame_RegisterEvent,
-                Frame_UnregisterEvent = info.Frame_UnregisterEvent
-            }
-            info.objects[name] = object
-            tinsert(info.names, name)
-            return setmetatable(object, { __index = Callbacks })
+        if eventName == "ADDON_LOADED" then
+            local arg1 = ...
+            local addon = lib.Addons[arg1]
+            if addon then
+                for object in IterableObjects(info) do
+                    local onInitializing = object.OnInitializing
+                    if onInitializing then
+                        SafeCall(onInitializing, object)
+                        object.OnInitializing = nil
+                    end
+                end
+            end
+            return
+        elseif eventName == "PLAYER_LOGIN" then
+            for object in IterableObjects(info) do
+                local onInitialized = object.OnInitialized
+                if onInitialized then
+                    SafeCall(onInitialized, object)
+                    object.OnInitialized = nil
+                end
+            end
+            self:UnregisterEvent(eventName)
         end
-
-        C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
-    end
-
-    function Api:NewObject(name)
-        C:IsString(name, 2)
-        local object = NewObject(self, name)
-
-        --Mixin(object, ...)
-
-        local storage = self[name .. "Storage"]
-
-        if storage then
-            object.storage = storage
+        for object in IterableObjects(info) do
+            if object.TriggerEvent then
+                object:TriggerEvent(eventName, ...)
+            end
         end
-
-        return object
-    end
-
-    function Api:NewStorage(name)
-        C:IsString(name, 2)
-        local storage = NewObject(self, name .. "Storage")
-
-        function storage:RegisterDB(defaults)
-            return self.DB:RegisterNamespace(name, defaults)
-        end
-
-        return storage
-    end
-
-    function Api:GetStorage(name)
-        C:IsString(name, 2)
-        local fullName = name .. "Storage"
-        local storage = self[fullName]
-        C:Ensures(storage ~= nil, L["OBJECT_DOES_NOT_EXIST"], fullName)
-        return storage
     end
 
     function lib:New(addonName, addonTable)
@@ -275,7 +278,7 @@ do
             addonTable.__AddonInfo = info
 
             self.Addons[addonName] = addonTable
-            return setmetatable(addonTable, { __index = Api })
+            return setmetatable(addonTable, { __index = Core })
         end
     end
 
