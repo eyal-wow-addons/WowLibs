@@ -42,35 +42,45 @@ end
 --[[ Events Management ]]
 
 local Callbacks = {}
+
+local function IterableObjects(info)
+    local names, objects = info.names, info.objects
+    local i, n = 1, #names
+    return function()
+        if i <= n then
+            local name = names[i]
+            i = i + 1
+            return objects[name]
+        end
+    end
+end
+
 local function OnEvent(self, eventName, ...)
     local info = self.__AddonInfo
     if eventName == "ADDON_LOADED" then
         local arg1 = ...
         local addon = lib.Addons[arg1]
         if addon then
-            for _, name in ipairs(info.names) do
-                local object = info.objects[name]
-                local callback = object.OnInitializing
-                if callback then
-                    SafeCall(callback, object)
+            for object in IterableObjects(info) do
+                local onInitializing = object.OnInitializing
+                if onInitializing then
+                    SafeCall(onInitializing, object)
                     object.OnInitializing = nil
                 end
             end
         end
         return
     elseif eventName == "PLAYER_LOGIN" then
-        for _, name in ipairs(info.names) do
-            local object = info.objects[name]
-            local callback = object.OnInitialized
-            if callback then
-                SafeCall(callback, object)
+        for object in IterableObjects(info) do
+            local onInitialized = object.OnInitialized
+            if onInitialized then
+                SafeCall(onInitialized, object)
                 object.OnInitialized = nil
             end
         end
         self:UnregisterEvent(eventName)
     end
-    for _, name in ipairs(info.names) do
-        local object = info.objects[name]
+    for object in IterableObjects(info) do
         if object.TriggerEvent then
             object:TriggerEvent(eventName, ...)
         end
