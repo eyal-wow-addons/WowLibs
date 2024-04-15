@@ -288,7 +288,7 @@ do
         if addonTable then
             local context = addonTable.__AddonContext
             if context then
-                incontexto:Frame_Release()
+                context:Frame_Release()
                 for i = #context.names, 1, -1 do
                     local objName = context.names[i]
                     context.objects[objName] = nil
