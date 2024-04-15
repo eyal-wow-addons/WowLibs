@@ -292,7 +292,7 @@ do
                 for i = #context.names, 1, -1 do
                     local objName = context.names[i]
                     context.objects[objName] = nil
-                    tremove(context.names, i)
+                    context.names[i] = nil
                 end
                 for eventName in pairs(context.callbacks) do
                     twipe(context.callbacks[eventName])
