@@ -43,7 +43,7 @@ do
                 name = name,
                 func = func,
                 api = {
-                    -- NOTE: This is used to determine whether any assertions were executed during the execution of the test
+                    -- NOTE: This is used to determine whether any assertions were executed during the execution of the test.
                     __calls = 0
                 }
             }
@@ -209,7 +209,7 @@ do
                 lastScope = scope
             end
             totalTests = totalTests + 1
-            -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution
+            -- NOTE: A valid test is one that calls one of the assertions apis at least once during its execution.
             local valid, success = ExecuteTest("test", addon, module, scope, test, resultsHandler)
             if valid then
                 if success then
