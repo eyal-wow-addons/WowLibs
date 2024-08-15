@@ -1,4 +1,4 @@
-## Interface: 100206
+## Interface: 110002
 
 ## Title: Wow|cff40a5f7Libs|r
 ## Notes: Provides the infrastructure for addons.
