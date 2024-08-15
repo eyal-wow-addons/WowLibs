@@ -173,3 +173,35 @@ function Tooltip:AddIcon(texture)
     C:Requires(texture, 2, "string", "number")
     self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
 end
+
+--[[local FluentApi = {}
+
+function FluentApi:SetLeftText(text, r, g, b)
+    return FluentApi
+end
+
+function FluentApi:SetRightText(text, r, g, b)
+    return FluentApi
+end
+
+function FluentApi:Indent()
+    return FluentApi
+end
+
+function FluentApi:NewLine()
+    return FluentApi
+end
+
+function FluentApi:SetIcon()
+    return FluentApi
+end
+
+function FluentApi:ToSingle()
+end
+
+function FluentApi:ToDouble()
+end
+
+function FluentApi:ToTitle()
+end]]
+
