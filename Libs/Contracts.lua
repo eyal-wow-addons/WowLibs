@@ -12,9 +12,10 @@ local smatch = string.match
 local type = type
 
 local BAD_ARGUMENT = "bad argument #%d to '%s' (%s expected, got %s)"
+local ENSURES_MESSAGE_IS_NOT_A_STRING = "<Contracts> Ensures 'message' is not a string."
 
 function lib:Ensures(condition, message, ...)
-    self:IsString(message, 3)
+    self:IsString(ENSURES_MESSAGE_IS_NOT_A_STRING, 3)
 
     if not condition then
         assert(condition, message:format(...))
