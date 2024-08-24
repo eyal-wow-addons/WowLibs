@@ -43,12 +43,13 @@ frame:SetScript("OnEvent", function()
     charFullName = sjoin(" - ", charName, charRealm1)
 end)
 
-function lib:IterableConnectedRealms(preIterationCallback)
+function lib:HasConnectedRealms()
+    return #realms > 0
+end
+
+function lib:IterableConnectedRealms()
     local i = 0
     local n = #realms
-    if n > 0 and preIterationCallback then
-        preIterationCallback()
-    end
     return function ()
         i = i + 1
         if i <= n then
