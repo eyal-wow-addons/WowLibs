@@ -8,10 +8,10 @@
 
 Libs\LibStub\LibStub.lua
 
-Libs\Contracts.lua
-Libs\Addon.lua
-Libs\Tooltip.lua
-Libs\UnitTest.lua
+Libs\Toolkit\Contracts.lua
+Libs\Toolkit\Addon.lua
+Libs\Toolkit\Tooltip.lua
+Libs\Toolkit\UnitTest.lua
 
 Tests\AddonTests.lua
 Tests\TooltipTests.lua
