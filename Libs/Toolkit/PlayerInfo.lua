@@ -11,6 +11,7 @@ if not lib then return end
 local ipairs = ipairs
 local select = select
 local sjoin = string.join
+local sort = table.sort
 
 local GetRealmName = GetRealmName
 local UnitName = UnitName
@@ -41,6 +42,15 @@ frame:SetScript("OnEvent", function()
     charName, charRealm1 = UnitName("player"), GetRealmName()
     charRealm2 = select(2, UnitFullName("player"))
     charFullName = sjoin(" - ", charName, charRealm1)
+    sort(realms, function(a, b)
+        if a == charRealm2 then
+            return true
+        elseif b == charRealm2 then
+            return false
+        else
+            return a < b
+        end
+    end)
 end)
 
 function lib:HasConnectedRealms()
@@ -59,31 +69,31 @@ function lib:IterableConnectedRealms()
     end
 end
 
-function lib:GetPlayerName()
+function lib:GetCharacterName()
     return charName
 end
 
-function lib:GetPlayerRealm(trimmed)
+function lib:GetCharacterRealm(trimmed)
     return trimmed and charRealm2 or charRealm1
 end
 
-function lib:GetPlayerFullName()
+function lib:GetCharacterFullName()
     return charFullName
 end
 
-function lib:IsPlayerOnConnectedRealm()
-    local name = self:GetPlayerFullName()
+function lib:IsCurrentCharacterOnConnectedRealm()
+    local name = self:GetCharacterFullName()
     return IsRealmConnectedRealm(name:match(REALM_PATTERN), true)
 end
 
 function lib:IsSameCharacter(name)
     C:IsString(name, 2)
-    return name == self:GetPlayerFullName()
+    return name == self:GetCharacterFullName()
 end
 
 function lib:IsCharacterOnCurrentRealm(name)
     C:IsString(name, 2)
-    return name:find(self:GetPlayerRealm())
+    return name:find(self:GetCharacterRealm())
 end
 
 function lib:IsCharacterOnConnectedRealm(name, includeOwn)
