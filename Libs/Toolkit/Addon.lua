@@ -57,13 +57,23 @@ do
         if not object then
             object = {
                 name = name,
-                callbacks = context.callbacks,
+                callbacks = {
+                    ["PLAYER_LOGIN"] = {}
+                },
                 Frame_RegisterEvent = context.Frame_RegisterEvent,
                 Frame_UnregisterEvent = context.Frame_UnregisterEvent
             }
+            
             context.objects[name] = object
             tinsert(context.names, name)
-            return setmetatable(object, { __index = Callbacks })
+
+            for key, value in pairs(Callbacks) do
+                if type(value) == "function" and not object[key] then
+                    object[key] = value
+                end
+            end
+    
+            return object
         end
 
         C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
@@ -73,14 +83,22 @@ do
         C:IsString(name, 2)
         local object = NewObject(self, name)
 
-        --Mixin(object, ...)
-
-        local storage = self[name .. "Storage"]
+        local storage = self:GetObject(name .. "Storage", true)
 
         if storage then
             object.storage = storage
         end
 
+        return object
+    end
+
+    function Core:GetObject(name, silence)
+        C:IsString(name, 2)
+        local context = self.__AddonContext
+        local object = context.objects[name]
+        if not silence then
+            C:Ensures(object ~= nil, L["OBJECT_DOES_NOT_EXIST"], name)
+        end
         return object
     end
 
@@ -98,9 +116,7 @@ do
     function Core:GetStorage(name)
         C:IsString(name, 2)
         local fullName = name .. "Storage"
-        local storage = self[fullName]
-        C:Ensures(storage ~= nil, L["OBJECT_DOES_NOT_EXIST"], fullName)
-        return storage
+        return self:GetObject(fullName)
     end
 end
 
@@ -249,9 +265,6 @@ do
                 name = addonName,
                 objects = { [addonName] = addonTable },
                 names = { addonName },
-                callbacks = {
-                    ["PLAYER_LOGIN"] = {}
-                },
                 Frame_RegisterEvent = function(_, eventName)
                     C:IsString(eventName, 2)
                     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
