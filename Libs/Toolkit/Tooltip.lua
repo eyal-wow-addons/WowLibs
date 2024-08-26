@@ -40,53 +40,24 @@ end
 
 local Tooltip = CreateWidgetProxy(GameTooltip, lib)
 
-do
-    local Tooltip_Redirect = function(t, k)
-        return Tooltip[k]
-    end
-
-    local Tooltip_MT = { __index = Tooltip_Redirect }
-
-    -- This is used to interop with broker panels
-    function Tooltip:UseTooltip(tooltip)
-        C:IsTable(tooltip, 1)
-        if tooltip ~= self.__tooltip then
-            if tooltip == GameTooltip or tooltip == Tooltip then
-                self.__tooltip = self
-            else
-                self.__tooltip = setmetatable(tooltip, Tooltip_MT)
-            end
-        end
-        return self.__tooltip
-    end
-end
-
-function Tooltip:CreateProxy(frame, proxy)
-    C:IsTable(frame, 2)
-    C:IsTable(proxy, 3)
-    return CreateWidgetProxy(frame, proxy)
+function Tooltip:CreateProxy(proxy)
+    C:IsTable(proxy, 2)
+    return CreateWidgetProxy(self, proxy)
 end
 
 function Tooltip:AddEmptyLine()
     self:AddLine(EMPTY)
 end
 
-function Tooltip:AddTitleLine(text, addOnce)
+function Tooltip:AddHeader(text)
     C:IsString(text, 2)
-    if addOnce then
-        local numLines = self:NumLines()
-        for i = 1, numLines do
-            local line = _G["GameTooltipTextLeft" .. i]
-            if line then
-                local lineText = line:GetText()
-                if lineText == text then
-                    return
-                end
-            end
-        end
-    end
     self:AddEmptyLine()
     self:AddHighlightLine(text)
+end
+
+function Tooltip:AddFormattedClassColoredHeader(pattern, text)
+    C:IsString(text, 2)
+    self:AddHeader(pattern:format(GetClassColoredTextForUnit("player", text)))
 end
 
 function Tooltip:AddIndentedLine(text, ...)
@@ -99,6 +70,11 @@ function Tooltip:AddHighlightLine(text)
     self:AddLine(text, HIGHLIGHT_FONT_COLOR:GetRGB())
 end
 
+function Tooltip:AddClassColorLine(text)
+    C:IsString(text, 2)
+    self:AddLine(GetClassColoredTextForUnit("player", text))
+end
+
 function Tooltip:AddGrayLine(text)
     C:IsString(text, 2)
     self:AddLine(text, GRAY_FONT_COLOR:GetRGB())
@@ -109,7 +85,7 @@ function Tooltip:AddGreenLine(text)
     self:AddLine(text, GREEN_FONT_COLOR:GetRGB())
 end
 
-function Tooltip:AddTitleDoubleLine(textLeft, textRight)
+function Tooltip:AddDoubleLineHeader(textLeft, textRight)
     C:IsString(textLeft, 2)
     C:IsString(textRight, 3)
     self:AddEmptyLine()
@@ -173,35 +149,3 @@ function Tooltip:AddIcon(texture)
     C:Requires(texture, 2, "string", "number")
     self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
 end
-
---[[local FluentApi = {}
-
-function FluentApi:SetLeftText(text, r, g, b)
-    return FluentApi
-end
-
-function FluentApi:SetRightText(text, r, g, b)
-    return FluentApi
-end
-
-function FluentApi:Indent()
-    return FluentApi
-end
-
-function FluentApi:NewLine()
-    return FluentApi
-end
-
-function FluentApi:SetIcon()
-    return FluentApi
-end
-
-function FluentApi:ToSingle()
-end
-
-function FluentApi:ToDouble()
-end
-
-function FluentApi:ToTitle()
-end]]
-
