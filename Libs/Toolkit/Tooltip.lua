@@ -11,7 +11,10 @@ local setmetatable = setmetatable
 local GameTooltip = GameTooltip
 local HIGHLIGHT_FONT_COLOR = HIGHLIGHT_FONT_COLOR
 local GRAY_FONT_COLOR = GRAY_FONT_COLOR
+local RED_FONT_COLOR = RED_FONT_COLOR
 local GREEN_FONT_COLOR = GREEN_FONT_COLOR
+local YELLOW_FONT_COLOR = YELLOW_FONT_COLOR
+local ORANGE_FONT_COLOR = ORANGE_FONT_COLOR
 
 local EMPTY = " "
 
@@ -49,103 +52,187 @@ function Tooltip:AddEmptyLine()
     self:AddLine(EMPTY)
 end
 
-function Tooltip:AddHeader(text)
+local TooltipLineMetadata = {
+    isHeader = false,
+    isDoubleLine = false,
+    leftText = nil,
+    rightText = nil,
+    leftColor = nil,
+    rightColor = nil,
+    texture = nil
+}
+
+function TooltipLineMetadata:Clear()
+    self.isHeader = false
+    self.isDoubleLine = false
+    self.leftText = nil
+    self.rightText = nil
+    self.leftColor = nil
+    self.rightColor = nil
+    self.texture = nil
+end
+
+function TooltipLineMetadata:SetLeftColor(color)
+    self.leftColor = color
+end
+
+function TooltipLineMetadata:SetRightColor(color)
+    self.rightColor = color
+end
+
+function TooltipLineMetadata:GetLeftColor()
+    if self.leftColor then
+        return self.leftColor:GetRGB()
+    else
+        return nil, nil, nil
+    end
+end
+
+function TooltipLineMetadata:GetRightColor()
+    if self.rightColor then
+        return self.rightColor:GetRGB()
+    else
+        return nil, nil, nil
+    end
+end
+
+function Tooltip:SetText(text)
     C:IsString(text, 2)
-    self:AddEmptyLine()
-    self:AddHighlightLine(text)
+    local data = TooltipLineMetadata
+    if not data.leftText then
+        data.leftText = text
+    elseif not data.rightText then
+        data.rightText = text
+        data.isDoubleLine = true
+    end
+    return self
 end
 
-function Tooltip:AddFormattedClassColoredHeader(pattern, text)
-    C:IsString(text, 2)
-    self:AddHeader(pattern:format(GetClassColoredTextForUnit("player", text)))
+function Tooltip:Format(pattern, ...)
+    C:IsString(pattern, 2)
+    return self:SetText(pattern:format(...))
 end
 
-function Tooltip:AddIndentedLine(text, ...)
-    C:IsString(text, 2)
-    self:AddLine("  " .. text, ...)
+function Tooltip:SetColor(color)
+    local data = TooltipLineMetadata
+    if not data.isDoubleLine then
+        data:SetLeftColor(color)
+    else
+        data:SetRightColor(color)
+    end
+    return self
 end
 
-function Tooltip:AddHighlightLine(text)
-    C:IsString(text, 2)
-    self:AddLine(text, HIGHLIGHT_FONT_COLOR:GetRGB())
+function Tooltip:SetRedColor()
+    self:SetColor(RED_FONT_COLOR)
+    return self
 end
 
-function Tooltip:AddClassColorLine(text)
-    C:IsString(text, 2)
-    self:AddLine(GetClassColoredTextForUnit("player", text))
+function Tooltip:SetGreenColor()
+    self:SetColor(GREEN_FONT_COLOR)
+    return self
 end
 
-function Tooltip:AddGrayLine(text)
-    C:IsString(text, 2)
-    self:AddLine(text, GRAY_FONT_COLOR:GetRGB())
+function Tooltip:SetGrayColor()
+    self:SetColor(GRAY_FONT_COLOR)
+    return self
 end
 
-function Tooltip:AddGreenLine(text)
-    C:IsString(text, 2)
-    self:AddLine(text, GREEN_FONT_COLOR:GetRGB())
+function Tooltip:SetYellowColor()
+    self:SetColor(YELLOW_FONT_COLOR)
+    return self
 end
 
-function Tooltip:AddDoubleLineHeader(textLeft, textRight)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddEmptyLine()
-    self:AddHighlightDoubleLine(textLeft, textRight)
+function Tooltip:SetOrangeColor()
+    self:SetColor(ORANGE_FONT_COLOR)
+    return self
 end
 
-function Tooltip:AddIndentedDoubleLine(textLeft, ...)
-    C:IsString(textLeft, 2)
-    self:AddDoubleLine("  " .. textLeft, ...)
+function Tooltip:SetClassColor()
+    local classFilename = select(2, UnitClass("player"))
+	local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
+    self:SetColor(color)
+    return self
 end
 
-function Tooltip:AddLeftHighlightDoubleLine(textLeft, textRight, r, g, b)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, r, g, b)
+function Tooltip:WrapWithClassColor()
+    local data = TooltipLineMetadata
+    if not data.isDoubleLine then
+        data.leftText = GetClassColoredTextForUnit("player", data.leftText)
+    else
+        data.rightText = GetClassColoredTextForUnit("player", data.rightText)
+    end
+    return self
 end
 
-function Tooltip:AddRightRedDoubleLine(textLeft, textRight, r, g, b)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, r, g, b, RED_FONT_COLOR:GetRGB())
+function Tooltip:Indent()
+    local data = TooltipLineMetadata
+    if not data.isDoubleLine then
+        data.leftText = "  " .. data.leftText
+    else
+        data.rightText = "  " .. data.rightText
+    end
+    return self
 end
 
-function Tooltip:AddRightYellowDoubleLine(textLeft, textRight, r, g, b)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, r, g, b, YELLOW_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddRightOrangeDoubleLine(textLeft, textRight, r, g, b)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, r, g, b, ORANGE_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddRightHighlightDoubleLine(textLeft, textRight, r, g, b)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, r, g, b, HIGHLIGHT_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddHighlightDoubleLine(textLeft, textRight)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, HIGHLIGHT_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddGrayDoubleLine(textLeft, textRight)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, GRAY_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddLeftGrayDoubleLine(textLeft, textRight)
-    C:IsString(textLeft, 2)
-    C:IsString(textRight, 3)
-    self:AddDoubleLine(textLeft, textRight, nil, nil, nil, GRAY_FONT_COLOR:GetRGB())
-end
-
-function Tooltip:AddIcon(texture)
+-- TODO: NYI
+function Tooltip:SetIcon(texture)
     C:Requires(texture, 2, "string", "number")
-    self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
+    -- self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
+    TooltipLineMetadata.texture = texture
+end
+
+function Tooltip:AsHeader()
+    local data = TooltipLineMetadata
+    data.isHeader = true
+    data:SetLeftColor(HIGHLIGHT_FONT_COLOR)
+    data:SetRightColor(HIGHLIGHT_FONT_COLOR)
+    return self
+end
+
+function Tooltip:ToHeader(leftPattern, rightPattern)
+    self:AsHeader()
+
+    local data = TooltipLineMetadata
+
+    if leftPattern and data.leftText then
+        data.leftText = leftPattern:format(data.leftText)
+    end
+
+    if rightPattern and data.rightText then
+        data.rightText = rightPattern:format(data.rightText)
+    end
+
+    if not data.isDoubleLine then
+        self:ToLine()
+    else
+        self:ToDoubleLine()
+    end
+end
+
+function Tooltip:ToLine()
+    local data = TooltipLineMetadata
+    local lR, lG, lB = data:GetLeftColor()
+
+    if data.isHeader then
+        self:AddEmptyLine()
+    end
+
+    self:AddLine(data.leftText, lR, lG, lB)
+
+    data:Clear()
+end
+
+function Tooltip:ToDoubleLine()
+    local data = TooltipLineMetadata
+    local lR, lG, lB = data:GetLeftColor()
+    local rR, rG, rB = data:GetRightColor()
+
+    if data.isHeader then
+        self:AddEmptyLine()
+    end
+
+    self:AddDoubleLine(data.leftText, data.rightText, lR, lG, lB, rR, rG, rB)
+
+    data:Clear()
 end
