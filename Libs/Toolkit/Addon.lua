@@ -105,9 +105,10 @@ do
     function Core:NewStorage(name)
         C:IsString(name, 2)
         local storage = NewObject(self, name .. "Storage")
+        local addonTable  = self
 
         function storage:RegisterDB(defaults)
-            return self.DB:RegisterNamespace(name, defaults)
+            return addonTable.DB:RegisterNamespace(name, defaults)
         end
 
         return storage
