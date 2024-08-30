@@ -133,43 +133,44 @@ function lib:WrapText(color)
     return self
 end
 
-function lib:SetHighlight(wrap)
-    return wrap and self:WrapText(HIGHLIGHT_FONT_COLOR) or self:SetColor(HIGHLIGHT_FONT_COLOR)
-end
-
-function lib:SetWhiteColor(wrap)
-    return wrap and self:WrapText(WHITE_FONT_COLOR) or self:SetColor(WHITE_FONT_COLOR)
-end
-
-function lib:SetRedColor(wrap)
-    return wrap and self:WrapText(RED_FONT_COLOR) or self:SetColor(RED_FONT_COLOR)
-end
-
-function lib:SetGreenColor(wrap)
-    return wrap and self:WrapText(GREEN_FONT_COLOR) or self:SetColor(GREEN_FONT_COLOR)
-end
-
-function lib:SetGrayColor(wrap)
-    return wrap and self:WrapText(GRAY_FONT_COLOR) or self:SetColor(GRAY_FONT_COLOR)
-end
-
-function lib:SetYellowColor(wrap)
-    return wrap and self:WrapText(YELLOW_FONT_COLOR) or self:SetColor(YELLOW_FONT_COLOR)
-end
-
-function lib:SetOrangeColor(wrap)
-    return wrap and self:WrapText(ORANGE_FONT_COLOR) or self:SetColor(ORANGE_FONT_COLOR)
-end
-
-function lib:SetClassColor(wrap)
-    local classFilename = select(2, UnitClass("player"))
-    local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
-    if wrap then
-        self:WrapText(color)
-    else
-        self:SetColor(color)
+do
+    local function WrapTextOrSetColor(color, wrap)
+        return wrap and lib:WrapText(color) or lib:SetColor(color)
     end
-    return self
+
+    function lib:SetHighlight(wrap)
+        return WrapTextOrSetColor(HIGHLIGHT_FONT_COLOR, wrap)
+    end
+
+    function lib:SetWhiteColor(wrap)
+        return WrapTextOrSetColor(WHITE_FONT_COLOR, wrap)
+    end
+
+    function lib:SetRedColor(wrap)
+        return WrapTextOrSetColor(RED_FONT_COLOR, wrap)
+    end
+
+    function lib:SetGreenColor(wrap)
+        return WrapTextOrSetColor(GREEN_FONT_COLOR, wrap)
+    end
+
+    function lib:SetGrayColor(wrap)
+        return WrapTextOrSetColor(GRAY_FONT_COLOR, wrap)
+    end
+
+    function lib:SetYellowColor(wrap)
+        return WrapTextOrSetColor(YELLOW_FONT_COLOR, wrap)
+    end
+
+    function lib:SetOrangeColor(wrap)
+        return WrapTextOrSetColor(ORANGE_FONT_COLOR, wrap)
+    end
+
+    function lib:SetClassColor(wrap)
+        local classFilename = select(2, UnitClass("player"))
+        local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
+        return WrapTextOrSetColor(color, wrap)
+    end
 end
 
 function lib:Indent()
