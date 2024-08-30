@@ -209,24 +209,24 @@ function lib:ToLine()
     return self
 end
 
-function lib:AddLine(text)
-    self:SetText(text):ToLine()
-    return self
-end
-
-function lib:AddFormattedLine(pattern, ...)
-    self:SetFormat(pattern, ...):ToLine()
-    return self
-end
-
 function lib:AddHeader(text)
-    self:SetText(text):ToHeader()
-    return self
+    return self:SetText(text):ToHeader()
 end
 
 function lib:AddFormattedHeader(pattern, ...)
-    self:SetFormat(pattern, ...):ToHeader()
-    return self
+    return self:SetFormat(pattern, ...):ToHeader()
+end
+
+function lib:AddLine(text)
+    return self:SetText(text):ToLine()
+end
+
+function lib:AddFormattedLine(pattern, ...)
+    return self:SetFormat(pattern, ...):ToLine()
+end
+
+function lib:AddDoubleLine(leftText, rightText)
+    return self:SetText(leftText):SetText(rightText):ToLine()
 end
 
 function lib:AddEmptyLine()
