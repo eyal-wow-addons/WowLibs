@@ -177,6 +177,12 @@ do
         local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
         return WrapTextOrSetColor(color, wrap)
     end
+
+    function lib:SetItemQualityColor(item, wrap)
+        local itemColor = item:GetItemQualityColor()
+        itemColor = itemColor and itemColor.color or NORMAL_FONT_COLOR
+        return WrapTextOrSetColor(itemColor, wrap)
+    end
 end
 
 function lib:Indent()
