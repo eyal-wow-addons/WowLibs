@@ -94,10 +94,10 @@ end
 function lib:SetLine(text)
     C:IsString(text, 2)
     local line = lib.__Line
-    local leftText, rightText = line:GetText()
+    local leftText = line:GetText()
     if not leftText then
         line:SetLeftText(text)
-    elseif not rightText then
+    else
         line:SetRightText(text)
     end
     return self
