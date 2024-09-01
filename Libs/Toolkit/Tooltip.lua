@@ -14,8 +14,6 @@ local GREEN_FONT_COLOR = GREEN_FONT_COLOR
 local YELLOW_FONT_COLOR = YELLOW_FONT_COLOR
 local ORANGE_FONT_COLOR = ORANGE_FONT_COLOR
 
-local EMPTY = " "
-
 do
     lib.__Line = lib.__Line or {}
 
@@ -93,7 +91,7 @@ do
     end
 end
 
-function lib:SetText(text)
+function lib:SetLine(text)
     C:IsString(text, 2)
     local line = lib.__Line
     local leftText, rightText = line:GetText()
@@ -105,9 +103,15 @@ function lib:SetText(text)
     return self
 end
 
-function lib:SetFormat(pattern, ...)
+function lib:SetFormattedLine(pattern, ...)
     C:IsString(pattern, 2)
-    return self:SetText(pattern:format(...))
+    return self:SetLine(pattern:format(...))
+end
+
+function lib:SetDoubleLine(leftText, rightText)
+    C:Requires(leftText, 2, "string")
+    C:Requires(rightText, 3, "string")
+    return self:SetLine(leftText):SetLine(rightText)
 end
 
 function lib:SetColor(color)
@@ -210,28 +214,53 @@ function lib:ToLine()
 end
 
 function lib:AddHeader(text)
-    return self:SetText(text):ToHeader()
+    C:Requires(texture, 2, "string")
+    return self:SetLine(text):ToHeader()
 end
 
 function lib:AddFormattedHeader(pattern, ...)
-    return self:SetFormat(pattern, ...):ToHeader()
+    C:Requires(pattern, 2, "string")
+    return self:SetFormattedLine(pattern, ...):ToHeader()
 end
 
 function lib:AddLine(text)
-    return self:SetText(text):ToLine()
+    C:Requires(text, 2, "string")
+    return self:SetLine(text):ToLine()
 end
 
 function lib:AddFormattedLine(pattern, ...)
-    return self:SetFormat(pattern, ...):ToLine()
+    C:Requires(pattern, 2, "string")
+    return self:SetFormattedLine(pattern, ...):ToLine()
 end
 
 function lib:AddDoubleLine(leftText, rightText)
-    return self:SetText(leftText):SetText(rightText):ToLine()
+    C:Requires(leftText, 2, "string")
+    C:Requires(rightText, 3, "string")
+    return self:SetDoubleLine(leftText, rightText):ToLine()
 end
 
-function lib:AddEmptyLine()
-    GameTooltip:AddLine(EMPTY)
-    return self
+do
+    local ICON_TEXTURE_SETTINGS = {
+        width = 20,
+        height = 20,
+        verticalOffset = 3,
+        margin = { right = 5, bottom = 5 },
+    }
+
+    function lib:AddIcon(texture)
+        C:Requires(texture, 2, "string", "number")
+        self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
+        return self
+    end
+end
+
+do
+    local EMPTY = " "
+
+    function lib:AddEmptyLine()
+        GameTooltip:AddLine(EMPTY)
+        return self
+    end
 end
 
 function lib:Show()
