@@ -115,6 +115,7 @@ function lib:SetDoubleLine(leftText, rightText)
 end
 
 function lib:SetColor(color)
+    C:Requires(color, 2, "table")
     local line = lib.__Line
     if not line:IsDoubleLine() then
         line:SetLeftColor(color)
@@ -125,6 +126,7 @@ function lib:SetColor(color)
 end
 
 function lib:WrapText(color)
+    C:Requires(color, 2, "table")
     local line = lib.__Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
@@ -214,7 +216,7 @@ function lib:ToLine()
 end
 
 function lib:AddHeader(text)
-    C:Requires(texture, 2, "string")
+    C:Requires(text, 2, "string")
     return self:SetLine(text):ToHeader()
 end
 
@@ -249,7 +251,7 @@ do
 
     function lib:AddIcon(texture)
         C:Requires(texture, 2, "string", "number")
-        self:AddTexture(texture, ICON_TEXTURE_SETTINGS)
+        GameTooltip:AddTexture(texture, ICON_TEXTURE_SETTINGS)
         return self
     end
 end
@@ -265,4 +267,8 @@ end
 
 function lib:Show()
     GameTooltip:Show()
+end
+
+function lib:Hide()
+    GameTooltip:Hide()
 end
