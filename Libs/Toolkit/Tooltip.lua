@@ -271,6 +271,10 @@ do
     end
 end
 
+function lib:Clear()
+    GameTooltip:ClearLines()
+end
+
 function lib:Show()
     GameTooltip:Show()
 end
