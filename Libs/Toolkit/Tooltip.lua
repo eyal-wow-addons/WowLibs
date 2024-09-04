@@ -172,10 +172,18 @@ do
         return WrapTextOrSetColor(ORANGE_FONT_COLOR, wrap)
     end
 
-    function lib:SetClassColor(wrap)
-        local classFilename = select(2, UnitClass("player"))
-        local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
+    function lib:SetClassColor(className, wrap)
+        local color = RAID_CLASS_COLORS[className] or NORMAL_FONT_COLOR
         return WrapTextOrSetColor(color, wrap)
+    end
+
+    function lib:SetUnitClassColor(unit, wrap)
+        C:Requires(unit, 2, "string")
+        return self:SetClassColor(select(2, UnitClass(unit)), wrap)
+    end
+
+    function lib:SetPlayerClassColor(wrap)
+        return self:SetUnitClassColor("player", wrap)
     end
 
     function lib:SetItemQualityColor(item, wrap)
