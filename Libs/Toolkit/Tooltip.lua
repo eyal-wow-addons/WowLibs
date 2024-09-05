@@ -6,6 +6,8 @@ assert(C, "Addon-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("Tooltip-1.0", 0)
 if not lib then return end
 
+local rep = string.rep
+
 local GameTooltip = GameTooltip
 local HIGHLIGHT_FONT_COLOR = HIGHLIGHT_FONT_COLOR
 local GRAY_FONT_COLOR = GRAY_FONT_COLOR
@@ -193,13 +195,15 @@ do
     end
 end
 
-function lib:Indent()
+function lib:Indent(length)
+    length = (not length or length < 1 and 2) or length
+    local indent = rep(" ", length)
     local line = lib.__Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
-        line:SetLeftText("  " .. leftText)
+        line:SetLeftText(indent .. leftText)
     else
-        line:SetRightText("  " .. rightText)
+        line:SetRightText(indent .. rightText)
     end
     return self
 end
