@@ -174,8 +174,8 @@ do
         return WrapTextOrSetColor(ORANGE_FONT_COLOR, wrap)
     end
 
-    function lib:SetClassColor(className, wrap)
-        local color = RAID_CLASS_COLORS[className] or NORMAL_FONT_COLOR
+    function lib:SetClassColor(classFilename, wrap)
+        local color = RAID_CLASS_COLORS[classFilename] or NORMAL_FONT_COLOR
         return WrapTextOrSetColor(color, wrap)
     end
 
