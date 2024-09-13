@@ -196,7 +196,7 @@ do
 end
 
 function lib:Indent(length)
-    length = (not length or length < 1 and 2) or length
+    length = ((not length or length < 1) and 2) or length
     local indent = rep(" ", length)
     local line = lib.__Line
     local leftText, rightText = line:GetText()
