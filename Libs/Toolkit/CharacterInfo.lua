@@ -1,11 +1,11 @@
 ---@diagnostic disable: undefined-field
 
-assert(LibStub, "PlayerInfo-1.0 requires LibStub")
+assert(LibStub, "CharacterInfo-1.0 requires LibStub")
 
 local C = LibStub("Contracts-1.0")
-assert(C, "PlayerInfo-1.0 requires Contracts-1.0")
+assert(C, "CharacterInfo-1.0 requires Contracts-1.0")
 
-local lib = LibStub:NewLibrary("PlayerInfo-1.0", 0)
+local lib = LibStub:NewLibrary("CharacterInfo-1.0", 0)
 if not lib then return end
 
 local ipairs = ipairs
@@ -21,8 +21,8 @@ local REALM_PATTERN = "% - (.+)"
 
 local charName, charRealm1, charRealm2, charFullName
 local realms = GetAutoCompleteRealms() or {}
-local IsRealmConnectedRealm
 
+local IsRealmConnectedRealm
 do
     local realmsMap = {}
     for _, v in ipairs(realms) do
@@ -69,31 +69,31 @@ function lib:IterableConnectedRealms()
     end
 end
 
-function lib:GetCharacterName()
+function lib:GetName()
     return charName
 end
 
-function lib:GetCharacterRealm(trimmed)
+function lib:GetRealm(trimmed)
     return trimmed and charRealm2 or charRealm1
 end
 
-function lib:GetCharacterFullName()
+function lib:GetFullName()
     return charFullName
 end
 
-function lib:IsCurrentCharacterOnConnectedRealm()
-    local name = self:GetCharacterFullName()
+function lib:IsOnConnectedRealm()
+    local name = self:GetFullName()
     return IsRealmConnectedRealm(name:match(REALM_PATTERN), true)
 end
 
 function lib:IsSameCharacter(name)
     C:IsString(name, 2)
-    return name == self:GetCharacterFullName()
+    return name == self:GetFullName()
 end
 
 function lib:IsCharacterOnCurrentRealm(name)
     C:IsString(name, 2)
-    return name:find(self:GetCharacterRealm())
+    return name:find(self:GetRealm())
 end
 
 function lib:IsCharacterOnConnectedRealm(name, includeOwn)
