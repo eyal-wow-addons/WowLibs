@@ -99,7 +99,7 @@ end
 do
     local parentName
     function lib:RegisterOptions(table, isAceOptionsTable)
-        C:IsTable(table)
+        C:IsTable(table, 2)
         C:Ensures(table.name, "Cannot find a 'name' entry in the provided table.")
         if not isAceOptionsTable then
             table = ConvertToAceOptionsTable(table)
@@ -113,6 +113,10 @@ do
             Config:RegisterOptionsTable(childName, table)
             Dialog:AddToBlizOptions(childName, table.name, parentName)
         end
+    end
+
+    function lib:Open(...)
+        Dialog:Open(parentName, ...)
     end
 end
 
