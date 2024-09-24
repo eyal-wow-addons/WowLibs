@@ -119,6 +119,10 @@ do
         local fullName = name .. "Storage"
         return self:GetObject(fullName)
     end
+
+    function Core:GetName()
+        return self.__AddonContext.name
+    end
 end
 
 --[[ Callbacks API ]]
@@ -321,5 +325,10 @@ do
             return true
         end
         return false
+    end
+
+    function lib:GetAddon(addonName)
+        C:IsString(addonName, 2)
+        return self.Addons[addonName]
     end
 end
