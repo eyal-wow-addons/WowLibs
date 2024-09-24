@@ -11,20 +11,23 @@ local sjoin = string.join
 local smatch = string.match
 local type = type
 
-local BAD_ARGUMENT = "bad argument #%d to '%s' (%s expected, got %s)"
-local ENSURES_MESSAGE_IS_NOT_A_STRING = "<Contracts> Ensures 'message' is not a string."
+local BAD_ARGUMENT = "Bad argument '#%d' to '%s'. '%s' expected, got '%s'."
+local REQUIRES_POS_NOT_NUMBER = "<Contracts> Requires 'pos' is not a number. got '%s'."
+local ENSURES_MESSAGE_NOT_STRING = "<Contracts> Ensures 'message' is not a string. got '%s'."
 
 function lib:Ensures(condition, message, ...)
-    self:IsString(ENSURES_MESSAGE_IS_NOT_A_STRING, 3)
+    if type(message) ~= "string" then
+        error(ENSURES_MESSAGE_NOT_STRING:format(type(message)), 3)
+    end
 
     if not condition then
         assert(condition, message:format(...))
     end
 end
 
-function lib:Requires(value, num, ...)
-    if type(num) ~= "number" then
-        error(BAD_ARGUMENT:format(2, "Requires", "number", type(num)), 1)
+function lib:Requires(value, pos, ...)
+    if type(pos) ~= "number" then
+        error(REQUIRES_POS_NOT_NUMBER:format(type(pos)), 3)
     end
 
     for i = 1, select("#", ...) do
@@ -33,25 +36,25 @@ function lib:Requires(value, num, ...)
 
     local types = sjoin(", ", ...)
     local name = smatch(debugstack(2, 2, 0), ": in function [`<](.-)['>]")
-    error(BAD_ARGUMENT:format(num, name, types, type(value)), 3)
+    error(BAD_ARGUMENT:format(pos, name, types, type(value)), 3)
 end
 
-function lib:IsTable(value, num)
-    self:Requires(value, num, "table")
+function lib:IsTable(value, pos)
+    self:Requires(value, pos, "table")
 end
 
-function lib:IsFunction(value, num)
-    self:Requires(value, num, "function")
+function lib:IsFunction(value, pos)
+    self:Requires(value, pos, "function")
 end
 
-function lib:IsString(value, num)
-    self:Requires(value, num, "string")
+function lib:IsString(value, pos)
+    self:Requires(value, pos, "string")
 end
 
-function lib:IsNumber(value, num)
-    self:Requires(value, num, "number")
+function lib:IsNumber(value, pos)
+    self:Requires(value, pos, "number")
 end
 
-function lib:IsBoolean(value, num)
-    self:Requires(value, num, "boolean")
+function lib:IsBoolean(value, pos)
+    self:Requires(value, pos, "boolean")
 end
