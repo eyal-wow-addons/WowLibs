@@ -97,7 +97,8 @@ local function ConvertToAceOptionsTable(source, argsfix)
 end
 
 do
-    local parentName
+    local parentName, categoryID
+    
     function lib:RegisterOptions(table, isAceOptionsTable)
         C:IsTable(table, 2)
         C:Ensures(table.name, "Cannot find a 'name' entry in the provided table.")
@@ -107,7 +108,7 @@ do
         if not parentName then
             parentName = table.name
             Config:RegisterOptionsTable(parentName, table)
-            Dialog:AddToBlizOptions(parentName, table.name)
+            _, categoryID = Dialog:AddToBlizOptions(parentName, table.name)
         else
             local childName = parentName .. "_" .. table.name
             Config:RegisterOptionsTable(childName, table)
@@ -115,8 +116,9 @@ do
         end
     end
 
-    function lib:Open(...)
-        Dialog:Open(parentName, ...)
+    function lib:Open()
+        HideUIPanel(GameMenuFrame)
+        Settings.OpenToCategory(categoryID)
     end
 end
 
