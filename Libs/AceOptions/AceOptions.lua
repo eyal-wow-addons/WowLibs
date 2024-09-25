@@ -19,7 +19,7 @@ local counter = 0
 local reloadTracker = {}
 
 local function FixTooltipDesc(value)
-    local frame = GetMouseFocus()
+    local frame = GetMouseFoci()[1]
     if frame and frame.obj and frame.obj.check then
         local check = frame.obj.check
         GameTooltip:SetOwner(check)
