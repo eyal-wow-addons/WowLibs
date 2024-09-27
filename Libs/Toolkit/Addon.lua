@@ -152,6 +152,12 @@ function Callbacks:RegisterEvent(eventName, callback)
         if IsEventValid(eventName) then
             self:Frame_RegisterEvent(eventName)
         end
+    else
+        for _, currentCallback in ipairs(callbacks) do
+            if currentCallback == callback then
+                return
+            end
+        end
     end
     tinsert(callbacks, callback)
 end
@@ -229,7 +235,7 @@ do
         if eventName == "ADDON_LOADED" then
             local arg1 = ...
             local addon = lib.Addons[arg1]
-            if addon then
+            if addon and arg1 == context.name then
                 for object in IterableObjects(context) do
                     local onInitializing = object.OnInitializing
                     if onInitializing then
@@ -273,7 +279,7 @@ do
                 Frame_RegisterEvent = function(_, eventName)
                     C:IsString(eventName, 2)
                     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
-                    if frame then
+                    if frame and not frame:IsEventRegistered(eventName) then
                         frame:RegisterEvent(eventName)
                     end
                 end,
