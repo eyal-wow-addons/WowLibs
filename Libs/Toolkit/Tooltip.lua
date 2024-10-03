@@ -94,7 +94,7 @@ do
 end
 
 function lib:SetLine(text)
-    C:IsString(text, 2)
+    C:Requires(text, 2, "string", "number")
     local line = lib.__Line
     local leftText = line:GetText()
     if not leftText then
@@ -111,8 +111,8 @@ function lib:SetFormattedLine(pattern, ...)
 end
 
 function lib:SetDoubleLine(leftText, rightText)
-    C:Requires(leftText, 2, "string")
-    C:Requires(rightText, 3, "string")
+    C:Requires(leftText, 2, "string", "number")
+    C:Requires(rightText, 3, "string", "number")
     return self:SetLine(leftText):SetLine(rightText)
 end
 
@@ -234,7 +234,7 @@ function lib:ToLine()
 end
 
 function lib:AddHeader(text)
-    C:Requires(text, 2, "string")
+    C:Requires(text, 2, "string", "number")
     return self:SetLine(text):ToHeader()
 end
 
@@ -244,7 +244,7 @@ function lib:AddFormattedHeader(pattern, ...)
 end
 
 function lib:AddLine(text)
-    C:Requires(text, 2, "string")
+    C:Requires(text, 2, "string", "number")
     return self:SetLine(text):ToLine()
 end
 
@@ -254,8 +254,8 @@ function lib:AddFormattedLine(pattern, ...)
 end
 
 function lib:AddDoubleLine(leftText, rightText)
-    C:Requires(leftText, 2, "string")
-    C:Requires(rightText, 3, "string")
+    C:Requires(leftText, 2, "string", "number")
+    C:Requires(rightText, 3, "string", "number")
     return self:SetDoubleLine(leftText, rightText):ToLine()
 end
 
