@@ -7,14 +7,21 @@ local lib = LibStub:NewLibrary("Tooltip-1.0", 0)
 if not lib then return end
 
 local rep = string.rep
+local select = select
+
+local UnitClass = UnitClass
 
 local GameTooltip = GameTooltip
+local NORMAL_FONT_COLOR = NORMAL_FONT_COLOR
 local HIGHLIGHT_FONT_COLOR = HIGHLIGHT_FONT_COLOR
 local GRAY_FONT_COLOR = GRAY_FONT_COLOR
 local RED_FONT_COLOR = RED_FONT_COLOR
 local GREEN_FONT_COLOR = GREEN_FONT_COLOR
+local BLUE_FONT_COLOR = BLUE_FONT_COLOR
+local WHITE_FONT_COLOR = WHITE_FONT_COLOR
 local YELLOW_FONT_COLOR = YELLOW_FONT_COLOR
 local ORANGE_FONT_COLOR = ORANGE_FONT_COLOR
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 do
     lib.__Line = lib.__Line or {}
