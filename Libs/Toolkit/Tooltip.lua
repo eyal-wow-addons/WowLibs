@@ -169,6 +169,10 @@ do
         return WrapTextOrSetColor(GREEN_FONT_COLOR, wrap)
     end
 
+    function lib:SetBlueColor(wrap)
+        return WrapTextOrSetColor(BLUE_FONT_COLOR, wrap)
+    end
+
     function lib:SetGrayColor(wrap)
         return WrapTextOrSetColor(GRAY_FONT_COLOR, wrap)
     end
