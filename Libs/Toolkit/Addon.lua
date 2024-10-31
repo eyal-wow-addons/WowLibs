@@ -120,6 +120,19 @@ do
         return self:GetObject(fullName)
     end
 
+    function Core:IterableObjects()
+        local context = self.__AddonContext
+        local names, objects = context.names, context.objects
+        local i, n = 1, #names
+        return function()
+            if i <= n then
+                local name = names[i]
+                i = i + 1
+                return objects[name]
+            end
+        end
+    end
+
     function Core:GetName()
         return self.__AddonContext.name
     end
@@ -218,25 +231,14 @@ end
 --[[ Library API ]]
 
 do
-    local function IterableObjects(context)
-        local names, objects = context.names, context.objects
-        local i, n = 1, #names
-        return function()
-            if i <= n then
-                local name = names[i]
-                i = i + 1
-                return objects[name]
-            end
-        end
-    end
-
     local function OnEvent(self, eventName, ...)
         local context = self.__AddonContext
+        local addon = lib.Addons[context.name]
         if eventName == "ADDON_LOADED" then
             local arg1 = ...
-            local addon = lib.Addons[arg1]
-            if addon and arg1 == context.name then
-                for object in IterableObjects(context) do
+            local loadedAddon = lib.Addons[arg1]
+            if loadedAddon and loadedAddon == addon then
+                for object in loadedAddon:IterableObjects() do
                     local onInitializing = object.OnInitializing
                     if onInitializing then
                         SafeCall(onInitializing, object)
@@ -246,7 +248,7 @@ do
             end
             return
         elseif eventName == "PLAYER_LOGIN" then
-            for object in IterableObjects(context) do
+            for object in addon:IterableObjects() do
                 local onInitialized = object.OnInitialized
                 if onInitialized then
                     SafeCall(onInitialized, object)
@@ -255,7 +257,7 @@ do
             end
             self:UnregisterEvent(eventName)
         end
-        for object in IterableObjects(context) do
+        for object in addon:IterableObjects() do
             if object.TriggerEvent then
                 object:TriggerEvent(eventName, ...)
             end
@@ -265,7 +267,9 @@ do
     function lib:New(addonName, addonTable)
         C:IsString(addonName, 2)
         C:IsTable(addonTable, 3)
+
         local context = addonTable.__AddonContext
+
         if not context then
             local frame = CreateFrame("Frame")
             frame:RegisterEvent("ADDON_LOADED")
@@ -308,7 +312,9 @@ do
 
     function lib:Delete(addonName)
         C:IsString(addonName, 2)
+
         local addonTable = self.Addons[addonName]
+        
         if addonTable then
             local context = addonTable.__AddonContext
             if context then
