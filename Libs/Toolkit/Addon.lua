@@ -83,7 +83,7 @@ do
         C:IsString(name, 2)
         local object = NewObject(self, name)
 
-        local storage = self:GetObject(name .. "Storage", true)
+        local storage = self:GetObject(name .. ".Storage", true)
 
         if storage then
             object.storage = storage
@@ -104,7 +104,7 @@ do
 
     function Core:NewStorage(name)
         C:IsString(name, 2)
-        local storage = NewObject(self, name .. "Storage")
+        local storage = NewObject(self, name .. ".Storage")
         local addonTable  = self
 
         function storage:RegisterDB(defaults)
@@ -116,7 +116,7 @@ do
 
     function Core:GetStorage(name)
         C:IsString(name, 2)
-        local fullName = name .. "Storage"
+        local fullName = name .. ".Storage"
         return self:GetObject(fullName)
     end
 
