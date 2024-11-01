@@ -36,10 +36,6 @@ do
         table.insert(actualEventsOrder, "object:OnInitialized")
     end
     
-    LifeCycleObjectTest:RegisterCallback(function()
-        table.insert(actualEventsOrder, "object:RegisterCallback")
-    end)
-    
     LifeCycleObjectTest:RegisterEvents(
         "PLAYER_LOGIN",
         "PLAYER_ENTERING_WORLD", function(self, eventName)

@@ -140,20 +140,6 @@ end
 
 --[[ Callbacks API ]]
 
-function Callbacks:RegisterCallback(callback)
-    C:IsFunction(callback, 2)
-    tinsert(self.callbacks["PLAYER_LOGIN"], callback)
-end
-
-function Callbacks:RegisterHookScript(frame, eventName, callback)
-    C:IsTable(frame, 2)
-    C:IsString(eventName, 3)
-    C:IsFunction(callback, 4)
-    self:RegisterCallback(function()
-        frame:HookScript(eventName, callback)
-    end)
-end
-
 function Callbacks:RegisterEvent(eventName, callback)
     C:IsString(eventName, 2)
     C:IsFunction(callback, 3)
