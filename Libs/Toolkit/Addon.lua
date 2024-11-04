@@ -218,13 +218,10 @@ end
 
 do
     local function OnEvent(self, eventName, ...)
-        local context = self.__AddonContext
-        local addon = lib.Addons[context.name]
         if eventName == "ADDON_LOADED" then
             local arg1 = ...
-            local loadedAddon = lib.Addons[arg1]
-            if loadedAddon and loadedAddon == addon then
-                for object in loadedAddon:IterableObjects() do
+            if arg1 == self:GetName() then
+                for object in self:IterableObjects() do
                     local onInitializing = object.OnInitializing
                     if onInitializing then
                         SafeCall(onInitializing, object)
@@ -234,16 +231,16 @@ do
             end
             return
         elseif eventName == "PLAYER_LOGIN" then
-            for object in addon:IterableObjects() do
+            for object in self:IterableObjects() do
                 local onInitialized = object.OnInitialized
                 if onInitialized then
                     SafeCall(onInitialized, object)
                     object.OnInitialized = nil
                 end
             end
-            self:UnregisterEvent(eventName)
+            self.__AddonContext:Frame_UnregisterEvent(eventName)
         end
-        for object in addon:IterableObjects() do
+        for object in self:IterableObjects() do
             if object.TriggerEvent then
                 object:TriggerEvent(eventName, ...)
             end
@@ -260,7 +257,9 @@ do
             local frame = CreateFrame("Frame")
             frame:RegisterEvent("ADDON_LOADED")
             frame:RegisterEvent("PLAYER_LOGIN")
-            frame:SetScript("OnEvent", OnEvent)
+            frame:SetScript("OnEvent", function(self, ...)
+                OnEvent(addonTable, ...)
+            end)
             
             context = {
                 name = addonName,
@@ -288,10 +287,9 @@ do
                 end
             }
 
-            frame.__AddonContext = context
             addonTable.__AddonContext = context
-
             self.Addons[addonName] = addonTable
+            
             return setmetatable(addonTable, { __index = Core })
         end
     end
