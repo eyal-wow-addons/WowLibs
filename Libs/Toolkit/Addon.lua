@@ -7,8 +7,6 @@ assert(C, "Addon-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("Addon-1.0", 0)
 if not lib then return end
 
-lib.Addons = lib.Addons or {}
-
 local Core = {}
 local Callbacks = {}
 
@@ -287,7 +285,6 @@ do
             }
 
             addonTable.__AddonContext = context
-            self.Addons[addonName] = addonTable
             
             return setmetatable(addonTable, { __index = Core })
         end
@@ -312,8 +309,6 @@ do
                 context.callbacks[eventName] = nil
             end
 
-            self.Addons[context.name] = nil
-
             for k in pairs(context) do
                 context[k] = nil
             end
@@ -324,10 +319,5 @@ do
         end
 
         return false
-    end
-
-    function lib:GetAddon(addonName)
-        C:IsString(addonName, 2)
-        return self.Addons[addonName]
     end
 end
