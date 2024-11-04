@@ -282,7 +282,6 @@ do
                 Frame_Release = function()
                     frame:UnregisterAllEvents()
                     frame:SetScript("OnEvent", nil)
-                    frame.__AddonContext = nil
                     frame = nil
                 end
             }
@@ -294,32 +293,36 @@ do
         end
     end
 
-    function lib:Delete(addonName)
-        C:IsString(addonName, 2)
+    function lib:Delete(addonTable)
+        C:IsTable(addonTable, 2)
 
-        local addonTable = self.Addons[addonName]
+        local context = addonTable.__AddonContext
         
-        if addonTable then
-            local context = addonTable.__AddonContext
-            if context then
-                context:Frame_Release()
-                for i = #context.names, 1, -1 do
-                    local objName = context.names[i]
-                    context.objects[objName] = nil
-                    context.names[i] = nil
-                end
-                for eventName in pairs(context.callbacks) do
-                    twipe(context.callbacks[eventName])
-                    context.callbacks[eventName] = nil
-                end
-                for k in pairs(context) do
-                    context[k] = nil
-                end
+        if context then
+            context:Frame_Release()
+
+            for i = #context.names, 1, -1 do
+                local objName = context.names[i]
+                context.objects[objName] = nil
+                context.names[i] = nil
             end
+
+            for eventName in pairs(context.callbacks) do
+                twipe(context.callbacks[eventName])
+                context.callbacks[eventName] = nil
+            end
+
+            self.Addons[context.name] = nil
+
+            for k in pairs(context) do
+                context[k] = nil
+            end
+
             addonTable.__AddonContext = nil
-            self.Addons[addonName] = nil
+
             return true
         end
+
         return false
     end
 
