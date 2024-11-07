@@ -102,7 +102,7 @@ end
 
 function lib:SetLine(text)
     C:Requires(text, 2, "string", "number")
-    local line = lib.Line
+    local line = self.Line
     local leftText = line:GetText()
     if not leftText then
         line:SetLeftText(text)
@@ -125,7 +125,7 @@ end
 
 function lib:SetColor(color)
     C:Requires(color, 2, "table")
-    local line = lib.Line
+    local line = self.Line
     if not line:IsDoubleLine() then
         line:SetLeftColor(color)
     else
@@ -136,7 +136,7 @@ end
 
 function lib:WrapText(color)
     C:Requires(color, 2, "table")
-    local line = lib.Line
+    local line = self.Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
         leftText = color and color:WrapTextInColorCode(leftText) or leftText
@@ -209,7 +209,7 @@ end
 function lib:Indent(length)
     length = ((not length or length < 1) and 2) or length
     local indent = rep(" ", length)
-    local line = lib.Line
+    local line = self.Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
         line:SetLeftText(indent .. leftText)
@@ -221,14 +221,12 @@ end
 
 function lib:ToHeader()
     self:AddEmptyLine()
-
-    lib.Line:SetHeader()
-
+    self.Line:SetHeader()
     return self:ToLine()
 end
 
 function lib:ToLine()
-    local line = lib.Line
+    local line = self.Line
     local leftText, rightText = line:GetText()
     local lR, lG, lB = line:GetLeftColor()
 
