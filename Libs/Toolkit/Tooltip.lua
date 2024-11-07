@@ -24,9 +24,9 @@ local ORANGE_FONT_COLOR = ORANGE_FONT_COLOR
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 do
-    lib.__Line = lib.__Line or {}
+    lib.Line = lib.Line or {}
 
-    local TooltipLineMetadata = {
+    local TooltipLine = {
         isHeader = false,
         isDoubleLine = false,
         leftText = nil,
@@ -35,65 +35,65 @@ do
         rightColor = nil
     }
 
-    function lib.__Line:Clear()
-        TooltipLineMetadata.isHeader = false
-        TooltipLineMetadata.isDoubleLine = false
-        TooltipLineMetadata.leftText = nil
-        TooltipLineMetadata.rightText = nil
-        TooltipLineMetadata.leftColor = nil
-        TooltipLineMetadata.rightColor = nil
+    function lib.Line:Clear()
+        TooltipLine.isHeader = false
+        TooltipLine.isDoubleLine = false
+        TooltipLine.leftText = nil
+        TooltipLine.rightText = nil
+        TooltipLine.leftColor = nil
+        TooltipLine.rightColor = nil
     end
 
-    function lib.__Line:IsHeader()
-        return TooltipLineMetadata.isHeader
+    function lib.Line:IsHeader()
+        return TooltipLine.isHeader
     end
 
-    function lib.__Line:SetHeader()
-        if not TooltipLineMetadata.leftColor then
+    function lib.Line:SetHeader()
+        if not TooltipLine.leftColor then
             self:SetLeftColor(HIGHLIGHT_FONT_COLOR)
         end
-        if not TooltipLineMetadata.rightColor then
+        if not TooltipLine.rightColor then
             self:SetRightColor(HIGHLIGHT_FONT_COLOR)
         end
-        TooltipLineMetadata.isHeader = true
+        TooltipLine.isHeader = true
     end
 
-    function lib.__Line:IsDoubleLine()
-        return TooltipLineMetadata.isDoubleLine
+    function lib.Line:IsDoubleLine()
+        return TooltipLine.isDoubleLine
     end
 
-    function lib.__Line:SetLeftText(text)
-        TooltipLineMetadata.leftText = text
+    function lib.Line:SetLeftText(text)
+        TooltipLine.leftText = text
     end
 
-    function lib.__Line:SetRightText(text)
-        TooltipLineMetadata.rightText = text
-        TooltipLineMetadata.isDoubleLine = true
+    function lib.Line:SetRightText(text)
+        TooltipLine.rightText = text
+        TooltipLine.isDoubleLine = true
     end
 
-    function lib.__Line:GetText()
-        return TooltipLineMetadata.leftText, TooltipLineMetadata.rightText
+    function lib.Line:GetText()
+        return TooltipLine.leftText, TooltipLine.rightText
     end
 
-    function lib.__Line:SetLeftColor(color)
-        TooltipLineMetadata.leftColor = color
+    function lib.Line:SetLeftColor(color)
+        TooltipLine.leftColor = color
     end
 
-    function lib.__Line:SetRightColor(color)
-        TooltipLineMetadata.rightColor = color
+    function lib.Line:SetRightColor(color)
+        TooltipLine.rightColor = color
     end
 
-    function lib.__Line:GetLeftColor()
-        if TooltipLineMetadata.leftColor then
-            return TooltipLineMetadata.leftColor:GetRGB()
+    function lib.Line:GetLeftColor()
+        if TooltipLine.leftColor then
+            return TooltipLine.leftColor:GetRGB()
         else
             return nil, nil, nil
         end
     end
 
-    function lib.__Line:GetRightColor()
-        if TooltipLineMetadata.rightColor then
-            return TooltipLineMetadata.rightColor:GetRGB()
+    function lib.Line:GetRightColor()
+        if TooltipLine.rightColor then
+            return TooltipLine.rightColor:GetRGB()
         else
             return nil, nil, nil
         end
@@ -102,7 +102,7 @@ end
 
 function lib:SetLine(text)
     C:Requires(text, 2, "string", "number")
-    local line = lib.__Line
+    local line = lib.Line
     local leftText = line:GetText()
     if not leftText then
         line:SetLeftText(text)
@@ -125,7 +125,7 @@ end
 
 function lib:SetColor(color)
     C:Requires(color, 2, "table")
-    local line = lib.__Line
+    local line = lib.Line
     if not line:IsDoubleLine() then
         line:SetLeftColor(color)
     else
@@ -136,7 +136,7 @@ end
 
 function lib:WrapText(color)
     C:Requires(color, 2, "table")
-    local line = lib.__Line
+    local line = lib.Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
         leftText = color and color:WrapTextInColorCode(leftText) or leftText
@@ -209,7 +209,7 @@ end
 function lib:Indent(length)
     length = ((not length or length < 1) and 2) or length
     local indent = rep(" ", length)
-    local line = lib.__Line
+    local line = lib.Line
     local leftText, rightText = line:GetText()
     if not line:IsDoubleLine() then
         line:SetLeftText(indent .. leftText)
@@ -222,13 +222,13 @@ end
 function lib:ToHeader()
     self:AddEmptyLine()
 
-    lib.__Line:SetHeader()
+    lib.Line:SetHeader()
 
     return self:ToLine()
 end
 
 function lib:ToLine()
-    local line = lib.__Line
+    local line = lib.Line
     local leftText, rightText = line:GetText()
     local lR, lG, lB = line:GetLeftColor()
 
