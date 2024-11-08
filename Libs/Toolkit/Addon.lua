@@ -134,6 +134,14 @@ do
         end
     end
 
+    function Core:Broadcast(eventName, ...)
+        for object in self:IterableObjects() do
+            if object.TriggerEvent then
+                object:TriggerEvent(eventName, ...)
+            end
+        end
+    end
+
     function Core:GetName()
         return self.__AddonContext.name
     end
@@ -256,11 +264,7 @@ do
             end
             self.__AddonContext:Frame_UnregisterEvent(eventName)
         end
-        for object in self:IterableObjects() do
-            if object.TriggerEvent then
-                object:TriggerEvent(eventName, ...)
-            end
-        end
+        self:Broadcast(eventName, ...)
     end
 
     function lib:New(addonName, addonTable)
