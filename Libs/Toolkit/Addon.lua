@@ -8,7 +8,7 @@ local lib = LibStub:NewLibrary("Addon-1.0", 0)
 if not lib then return end
 
 local Core = {}
-local Callbacks = {}
+local Object = {}
 
 local ipairs, pairs = ipairs, pairs
 local pcall, geterrorhandler = pcall, geterrorhandler
@@ -54,18 +54,21 @@ do
 
         if not object then
             object = {
-                name = name,
-                callbacks = {
-                    ["PLAYER_LOGIN"] = {}
-                },
-                Frame_RegisterEvent = context.Frame_RegisterEvent,
-                Frame_UnregisterEvent = context.Frame_UnregisterEvent
+                __ObjectContext = {
+                    name = name,
+                    addonName = context.name,
+                    events = {
+                        ["PLAYER_LOGIN"] = {}
+                    },
+                    Frame_RegisterEvent = context.Frame_RegisterEvent,
+                    Frame_UnregisterEvent = context.Frame_UnregisterEvent
+                }
             }
             
             context.objects[name] = object
             tinsert(context.names, name)
 
-            for key, value in pairs(Callbacks) do
+            for key, value in pairs(Object) do
                 if type(value) == "function" and not object[key] then
                     object[key] = value
                 end
@@ -136,18 +139,31 @@ do
     end
 end
 
---[[ Callbacks API ]]
+--[[ Object API ]]
 
-function Callbacks:RegisterEvent(eventName, callback)
+function Object:GetName()
+    return self.__ObjectContext.name
+end
+
+function Object:GetAddonName()
+    return self.__ObjectContext.addonName
+end
+
+function Object:GetFullName()
+    return self:GetAddonName() .. "." .. self:GetName()
+end
+
+function Object:RegisterEvent(eventName, callback)
     C:IsString(eventName, 2)
     C:IsFunction(callback, 3)
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
-    local callbacks = self.callbacks[eventName]
+    local context = self.__ObjectContext
+    local callbacks = context.events[eventName]
     if not callbacks then
         callbacks = {}
-        self.callbacks[eventName] = callbacks
+        context.events[eventName] = callbacks
         if IsEventValid(eventName) then
-            self:Frame_RegisterEvent(eventName)
+            context:Frame_RegisterEvent(eventName)
         end
     else
         for _, currentCallback in ipairs(callbacks) do
@@ -159,7 +175,7 @@ function Callbacks:RegisterEvent(eventName, callback)
     tinsert(callbacks, callback)
 end
 
-function Callbacks:RegisterEvents(...)
+function Object:RegisterEvents(...)
     local eventNames = {}
     local callback
     for i = 1, select("#", ...) do
@@ -179,10 +195,11 @@ function Callbacks:RegisterEvents(...)
     end
 end
 
-function Callbacks:UnregisterEvent(eventName, callback)
+function Object:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
-    local callbacks = self.callbacks[eventName]
+    local context = self.__ObjectContext
+    local callbacks = context.events[eventName]
     if callbacks then
         for i = #callbacks, 1, -1 do
             local registeredCallback = callbacks[i]
@@ -195,16 +212,17 @@ function Callbacks:UnregisterEvent(eventName, callback)
         end
         if not callback or #callbacks == 0 then
             if IsEventValid(eventName) then
-                self:Frame_UnregisterEvent(eventName)
+                context:Frame_UnregisterEvent(eventName)
             end
-            self.callbacks[eventName] = nil
+            context.events[eventName] = nil
         end
     end
 end
 
-function Callbacks:TriggerEvent(eventName, ...)
+function Object:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
-    local callbacks = self.callbacks[eventName]
+    local context = self.__ObjectContext
+    local callbacks = context.events[eventName]
     if callbacks then
         for _, callback in ipairs(callbacks) do
             SafeCall(callback, self, eventName, ...)
@@ -304,9 +322,9 @@ do
                 context.names[i] = nil
             end
 
-            for eventName in pairs(context.callbacks) do
-                twipe(context.callbacks[eventName])
-                context.callbacks[eventName] = nil
+            for eventName in pairs(context.events) do
+                twipe(context.events[eventName])
+                context.events[eventName] = nil
             end
 
             for k in pairs(context) do
