@@ -142,6 +142,35 @@ do
         end
     end
 
+    function Core:Delete()
+        local context = self.__AddonContext
+        
+        if context then
+            context.Frame:Release()
+
+            for i = #context.Names, 1, -1 do
+                local objName = context.Names[i]
+                context.Objects[objName] = nil
+                context.Names[i] = nil
+            end
+
+            for eventName in pairs(context.Events) do
+                twipe(context.Events[eventName])
+                context.Events[eventName] = nil
+            end
+
+            for k in pairs(context) do
+                context[k] = nil
+            end
+
+            self.__AddonContext = nil
+
+            return true
+        end
+
+        return false
+    end
+
     function Core:GetName()
         return self.__AddonContext.name
     end
@@ -312,36 +341,5 @@ do
             
             return setmetatable(addonTable, { __index = Core })
         end
-    end
-
-    function lib:Delete(addonTable)
-        C:IsTable(addonTable, 2)
-
-        local context = addonTable.__AddonContext
-        
-        if context then
-            context.Frame:Release()
-
-            for i = #context.Names, 1, -1 do
-                local objName = context.Names[i]
-                context.Objects[objName] = nil
-                context.Names[i] = nil
-            end
-
-            for eventName in pairs(context.Events) do
-                twipe(context.Events[eventName])
-                context.Events[eventName] = nil
-            end
-
-            for k in pairs(context) do
-                context[k] = nil
-            end
-
-            addonTable.__AddonContext = nil
-
-            return true
-        end
-
-        return false
     end
 end
