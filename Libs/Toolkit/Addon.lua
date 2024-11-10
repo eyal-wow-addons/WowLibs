@@ -57,9 +57,7 @@ do
                 __ObjectContext = {
                     name = name,
                     addonName = context.name,
-                    events = {
-                        ["PLAYER_LOGIN"] = {}
-                    },
+                    events = {},
                     Frame_RegisterEvent = context.Frame_RegisterEvent,
                     Frame_UnregisterEvent = context.Frame_UnregisterEvent
                 }
