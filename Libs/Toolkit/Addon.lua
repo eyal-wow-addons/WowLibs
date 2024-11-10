@@ -50,21 +50,23 @@ do
         local context = self.__AddonContext
         C:Ensures(context, L["ADDON_CONTEXT_DOES_NOT_EXIST"], context.name)
 
-        local object = context.objects[name]
+        local object = context.Objects[name]
 
         if not object then
             object = {
                 __ObjectContext = {
                     name = name,
                     addonName = context.name,
-                    events = {},
-                    Frame_RegisterEvent = context.Frame_RegisterEvent,
-                    Frame_UnregisterEvent = context.Frame_UnregisterEvent
+                    Events = {},
+                    Frame = {
+                        RegisterEvent = context.Frame.RegisterEvent,
+                        UnregisterEvent = context.Frame.UnregisterEvent
+                    }
                 }
             }
             
-            context.objects[name] = object
-            tinsert(context.names, name)
+            context.Objects[name] = object
+            tinsert(context.Names, name)
 
             for key, value in pairs(Object) do
                 if type(value) == "function" and not object[key] then
@@ -94,7 +96,7 @@ do
     function Core:GetObject(name, silence)
         C:IsString(name, 2)
         local context = self.__AddonContext
-        local object = context.objects[name]
+        local object = context.Objects[name]
         if not silence then
             C:Ensures(object ~= nil, L["OBJECT_DOES_NOT_EXIST"], name)
         end
@@ -121,7 +123,7 @@ do
 
     function Core:IterableObjects()
         local context = self.__AddonContext
-        local names, objects = context.names, context.objects
+        local names, objects = context.Names, context.Objects
         local i, n = 1, #names
         return function()
             if i <= n then
@@ -164,12 +166,12 @@ function Object:RegisterEvent(eventName, callback)
     C:IsFunction(callback, 3)
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
     local context = self.__ObjectContext
-    local callbacks = context.events[eventName]
+    local callbacks = context.Events[eventName]
     if not callbacks then
         callbacks = {}
-        context.events[eventName] = callbacks
+        context.Events[eventName] = callbacks
         if IsEventValid(eventName) then
-            context:Frame_RegisterEvent(eventName)
+            context.Frame:RegisterEvent(eventName)
         end
     else
         for _, currentCallback in ipairs(callbacks) do
@@ -205,7 +207,7 @@ function Object:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
     local context = self.__ObjectContext
-    local callbacks = context.events[eventName]
+    local callbacks = context.Events[eventName]
     if callbacks then
         for i = #callbacks, 1, -1 do
             local registeredCallback = callbacks[i]
@@ -218,9 +220,9 @@ function Object:UnregisterEvent(eventName, callback)
         end
         if not callback or #callbacks == 0 then
             if IsEventValid(eventName) then
-                context:Frame_UnregisterEvent(eventName)
+                context.Frame:UnregisterEvent(eventName)
             end
-            context.events[eventName] = nil
+            context.Events[eventName] = nil
         end
     end
 end
@@ -228,7 +230,7 @@ end
 function Object:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
     local context = self.__ObjectContext
-    local callbacks = context.events[eventName]
+    local callbacks = context.Events[eventName]
     if callbacks then
         for _, callback in ipairs(callbacks) do
             SafeCall(callback, self, eventName, ...)
@@ -260,7 +262,7 @@ do
                     object.OnInitialized = nil
                 end
             end
-            self.__AddonContext:Frame_UnregisterEvent(eventName)
+            self.__AddonContext.Frame:UnregisterEvent(eventName)
         end
         self:Broadcast(eventName, ...)
     end
@@ -281,27 +283,29 @@ do
             
             context = {
                 name = addonName,
-                objects = { [addonName] = addonTable },
-                names = { addonName },
-                Frame_RegisterEvent = function(_, eventName)
-                    C:IsString(eventName, 2)
-                    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
-                    if frame and not frame:IsEventRegistered(eventName) then
-                        frame:RegisterEvent(eventName)
+                Objects = { [addonName] = addonTable },
+                Names = { addonName },
+                Frame = {
+                    RegisterEvent = function(_, eventName)
+                        C:IsString(eventName, 2)
+                        C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
+                        if frame and not frame:IsEventRegistered(eventName) then
+                            frame:RegisterEvent(eventName)
+                        end
+                    end,
+                    UnregisterEvent = function(_, eventName)
+                        C:IsString(eventName, 2)
+                        C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
+                        if frame then
+                            frame:UnregisterEvent(eventName)
+                        end
+                    end,
+                    Release = function()
+                        frame:UnregisterAllEvents()
+                        frame:SetScript("OnEvent", nil)
+                        frame = nil
                     end
-                end,
-                Frame_UnregisterEvent = function(_, eventName)
-                    C:IsString(eventName, 2)
-                    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
-                    if frame then
-                        frame:UnregisterEvent(eventName)
-                    end
-                end,
-                Frame_Release = function()
-                    frame:UnregisterAllEvents()
-                    frame:SetScript("OnEvent", nil)
-                    frame = nil
-                end
+                }
             }
 
             addonTable.__AddonContext = context
@@ -316,17 +320,17 @@ do
         local context = addonTable.__AddonContext
         
         if context then
-            context:Frame_Release()
+            context.Frame:Release()
 
-            for i = #context.names, 1, -1 do
-                local objName = context.names[i]
-                context.objects[objName] = nil
-                context.names[i] = nil
+            for i = #context.Names, 1, -1 do
+                local objName = context.Names[i]
+                context.Objects[objName] = nil
+                context.Names[i] = nil
             end
 
-            for eventName in pairs(context.events) do
-                twipe(context.events[eventName])
-                context.events[eventName] = nil
+            for eventName in pairs(context.Events) do
+                twipe(context.Events[eventName])
+                context.Events[eventName] = nil
             end
 
             for k in pairs(context) do
