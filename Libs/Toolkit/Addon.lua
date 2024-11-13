@@ -325,6 +325,8 @@ do
                 end
             end
             self.__AddonContext.Frame:UnregisterEvent(eventName)
+        elseif eventName == "ADDONS_UNLOADING" then
+            self:Delete()
         end
         self:Broadcast(eventName, ...)
     end
@@ -339,6 +341,7 @@ do
             local frame = CreateFrame("Frame")
             frame:RegisterEvent("ADDON_LOADED")
             frame:RegisterEvent("PLAYER_LOGIN")
+            frame:RegisterEvent("ADDONS_UNLOADING")
             frame:SetScript("OnEvent", function(self, ...)
                 OnEvent(addonTable, ...)
             end)
