@@ -7,7 +7,7 @@ assert(C, "Addon-1.0 requires Contracts-1.0")
 local lib = LibStub:NewLibrary("Addon-1.0", 0)
 if not lib then return end
 
-local Core = {}
+local Addon = {}
 local Object = {}
 
 local ipairs, pairs = ipairs, pairs
@@ -40,7 +40,7 @@ local function SafeCall(func, ...)
 	end
 end
 
---[[ Core API ]]
+--[[ Addon API ]]
 
 do
     local function NewObject(self, name)
@@ -81,7 +81,7 @@ do
         C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
     end
 
-    function Core:NewObject(name)
+    function Addon:NewObject(name)
         C:IsString(name, 2)
 
         local object = NewObject(self, name)
@@ -94,7 +94,7 @@ do
         return object
     end
 
-    function Core:GetObject(name, silence)
+    function Addon:GetObject(name, silence)
         C:IsString(name, 2)
 
         local context = self.__AddonContext
@@ -107,7 +107,7 @@ do
         return object
     end
 
-    function Core:NewStorage(name)
+    function Addon:NewStorage(name)
         C:IsString(name, 2)
 
         local storage = NewObject(self, name .. ".Storage")
@@ -120,7 +120,7 @@ do
         return storage
     end
 
-    function Core:GetStorage(name)
+    function Addon:GetStorage(name)
         C:IsString(name, 2)
 
         local fullName = name .. ".Storage"
@@ -128,7 +128,7 @@ do
         return self:GetObject(fullName)
     end
 
-    function Core:IterableObjects()
+    function Addon:IterableObjects()
         local context = self.__AddonContext
         local names, objects = context.Names, context.Objects
         local i, n = 1, #names
@@ -141,7 +141,7 @@ do
         end
     end
 
-    function Core:Broadcast(eventName, ...)
+    function Addon:Broadcast(eventName, ...)
         for object in self:IterableObjects() do
             if object.TriggerEvent and not object:IsDisabled() then
                 object:TriggerEvent(eventName, ...)
@@ -149,7 +149,7 @@ do
         end
     end
 
-    function Core:Delete()
+    function Addon:Delete()
         local context = self.__AddonContext
         
         if context then
@@ -178,7 +178,7 @@ do
         return false
     end
 
-    function Core:GetName()
+    function Addon:GetName()
         return self.__AddonContext.name
     end
 end
@@ -289,7 +289,7 @@ function Object:TriggerEvent(eventName, ...)
 
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
-    
+
     if callbacks then
         for _, callback in ipairs(callbacks) do
             SafeCall(callback, self, eventName, ...)
@@ -369,7 +369,7 @@ do
 
             addonTable.__AddonContext = context
             
-            return setmetatable(addonTable, { __index = Core })
+            return setmetatable(addonTable, { __index = Addon })
         end
     end
 end
