@@ -57,6 +57,7 @@ do
                 __ObjectContext = {
                     name = name,
                     addonName = context.name,
+                    isDisabled = false,
                     Events = {},
                     Frame = {
                         RegisterEvent = context.Frame.RegisterEvent,
@@ -136,7 +137,7 @@ do
 
     function Core:Broadcast(eventName, ...)
         for object in self:IterableObjects() do
-            if object.TriggerEvent then
+            if object.TriggerEvent and not object:IsDisabled() then
                 object:TriggerEvent(eventName, ...)
             end
         end
@@ -188,6 +189,20 @@ end
 
 function Object:GetFullName()
     return self:GetAddonName() .. "." .. self:GetName()
+end
+
+function Object:IsDisabled()
+    return self.__ObjectContext.isDisabled
+end
+
+function Object:Disable()
+    self.__ObjectContext.isDisabled = true
+    self:TriggerEvent("ADDONLIB_OBJECT_DISABLED")
+end
+
+function Object:Enable()
+    self.__ObjectContext.isDisabled = false
+    self:TriggerEvent("ADDONLIB_OBJECT_ENABLED")
 end
 
 function Object:RegisterEvent(eventName, callback)
