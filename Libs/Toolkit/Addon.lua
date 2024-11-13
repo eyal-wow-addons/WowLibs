@@ -24,7 +24,7 @@ local IsEventValid = C_EventUtils.IsEventValid
 
 local L = {
     ["ADDON_MISSING"] = "The addon '%s' is missing or does not exist.",
-    ["ADDON_CONTEXT_DOES_NOT_EXIST"] = "The required table '__AddonContext' does not exist for addon '%s'.",
+    ["ADDON_CONTEXT_DOES_NOT_EXIST"] = "The required table '__AddonContext' does not exist.",
 	["OBJECT_ALREADY_EXISTS"] = "the object '%s' already exists.",
 	["OBJECT_DOES_NOT_EXIST"] = "the object '%s' does not exist.",
 	["CANNOT_REGISTER_EVENT"] = "cannot register event '%s'.",
@@ -48,7 +48,7 @@ do
         C:IsString(name, 2)
 
         local context = self.__AddonContext
-        C:Ensures(context, L["ADDON_CONTEXT_DOES_NOT_EXIST"], context.name)
+        C:Ensures(context, L["ADDON_CONTEXT_DOES_NOT_EXIST"])
 
         local object = context.Objects[name]
 
@@ -79,6 +79,10 @@ do
         end
 
         C:Ensures(false, L["OBJECT_ALREADY_EXISTS"], name)
+    end
+
+    function Addon:GetName()
+        return self.__AddonContext.name
     end
 
     function Addon:NewObject(name)
@@ -143,46 +147,8 @@ do
 
     function Addon:Broadcast(eventName, ...)
         for object in self:IterableObjects() do
-            -- NOTE: We're checking whether `TriggerEvent` exists
-            -- because we're adding the `addonTable` to the object list (`objects`)
-            -- and it lacks the Object's APIs.
-            if object.TriggerEvent and not object:IsDisabled() then
-                object:TriggerEvent(eventName, ...)
-            end
+            object:TriggerEvent(eventName, ...)
         end
-    end
-
-    function Addon:Dispose()
-        local context = self.__AddonContext
-        
-        if context then
-            context.Frame:Release()
-
-            for i = #context.Names, 1, -1 do
-                local objName = context.Names[i]
-                context.Objects[objName] = nil
-                context.Names[i] = nil
-            end
-
-            for eventName in pairs(context.Events) do
-                twipe(context.Events[eventName])
-                context.Events[eventName] = nil
-            end
-
-            for k in pairs(context) do
-                context[k] = nil
-            end
-
-            self.__AddonContext = nil
-
-            return true
-        end
-
-        return false
-    end
-
-    function Addon:GetName()
-        return self.__AddonContext.name
     end
 end
 
@@ -217,7 +183,6 @@ end
 function Object:RegisterEvent(eventName, callback)
     C:IsString(eventName, 2)
     C:IsFunction(callback, 3)
-    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
 
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
@@ -246,7 +211,6 @@ function Object:RegisterEvents(...)
     for i = 1, select("#", ...) do
         local arg = select(i, ...)
         if type(arg) == "string" then
-            C:Ensures(arg ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], arg)
             tinsert(eventNames, arg)
         elseif type(arg) == "function" then
             callback = arg
@@ -263,7 +227,6 @@ end
 
 function Object:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
-    C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
 
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
@@ -290,6 +253,10 @@ end
 function Object:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
 
+    if self:IsDisabled() then
+        return
+    end
+
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
 
@@ -303,32 +270,76 @@ end
 --[[ Library API ]]
 
 do
+    local function OnInitializing(object)
+        if object.OnInitializing then
+            SafeCall(object.OnInitializing, object)
+            object.OnInitializing = nil
+        end
+    end
+
+    local function OnInitialized(object)
+        if object.OnInitialized then
+            SafeCall(object.OnInitialized, object)
+            object.OnInitialized = nil
+        end
+    end
+
+    local function Dispose(addonTable)
+        local context = addonTable.__AddonContext
+        
+        if context then
+            for i = #context.Names, 1, -1 do
+                local objName = context.Names[i]
+                context.Objects[objName] = nil
+                context.Names[i] = nil
+            end
+
+            for eventName in pairs(context.Events) do
+                twipe(context.Events[eventName])
+                context.Events[eventName] = nil
+            end
+
+            for k in pairs(context) do
+                context[k] = nil
+            end
+
+            addonTable.__AddonContext = nil
+        end
+    end
+
     local function OnEvent(self, eventName, ...)
+        local context = self.__AddonContext
+
+        if not context then
+            return
+        end
+
         if eventName == "ADDON_LOADED" then
             local arg1 = ...
             if arg1 == self:GetName() then
+                OnInitializing(self)
                 for object in self:IterableObjects() do
-                    local onInitializing = object.OnInitializing
-                    if onInitializing then
-                        SafeCall(onInitializing, object)
-                        object.OnInitializing = nil
-                    end
+                    OnInitializing(object)
                 end
             end
             return
-        elseif eventName == "PLAYER_LOGIN" then
-            for object in self:IterableObjects() do
-                local onInitialized = object.OnInitialized
-                if onInitialized then
-                    SafeCall(onInitialized, object)
-                    object.OnInitialized = nil
-                end
-            end
-            self.__AddonContext.Frame:UnregisterEvent(eventName)
-        elseif eventName == "ADDONS_UNLOADING" then
-            self:Dispose()
         end
+
+        if eventName == "PLAYER_LOGIN" then
+            OnInitialized(self)
+            -- NOTE: The goal here is to ensure that `OnInitialized` is called on objects 
+            -- before any callback is triggered during the `PLAYER_LOGIN` event. 
+            -- The two iterations (one here and one in `Broadcast`) enforce this order of operations.
+            for object in self:IterableObjects() do
+                OnInitialized(object)
+            end
+        end
+
         self:Broadcast(eventName, ...)
+
+        if eventName == "PLAYER_LOGOUT" then
+            context.Frame:Dispose()
+        end
     end
 
     function lib:New(addonName, addonTable)
@@ -341,15 +352,15 @@ do
             local frame = CreateFrame("Frame")
             frame:RegisterEvent("ADDON_LOADED")
             frame:RegisterEvent("PLAYER_LOGIN")
-            frame:RegisterEvent("ADDONS_UNLOADING")
+            frame:RegisterEvent("PLAYER_LOGOUT")
             frame:SetScript("OnEvent", function(self, ...)
                 OnEvent(addonTable, ...)
             end)
             
             context = {
                 name = addonName,
-                Objects = { [addonName] = addonTable },
-                Names = { addonName },
+                Objects = {},
+                Names = {},
                 Frame = {
                     RegisterEvent = function(_, eventName)
                         C:IsString(eventName, 2)
@@ -361,11 +372,14 @@ do
                     UnregisterEvent = function(_, eventName)
                         C:IsString(eventName, 2)
                         C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
+                        C:Ensures(eventName ~= "PLAYER_LOGIN", L["CANNOT_UNREGISTER_EVENT"], eventName)
+                        C:Ensures(eventName ~= "PLAYER_LOGOUT", L["CANNOT_UNREGISTER_EVENT"], eventName)
                         if frame then
                             frame:UnregisterEvent(eventName)
                         end
                     end,
-                    Release = function()
+                    Dispose = function()
+                        Dispose(addonTable)
                         frame:UnregisterAllEvents()
                         frame:SetScript("OnEvent", nil)
                         frame = nil
