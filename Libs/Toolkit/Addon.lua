@@ -152,7 +152,7 @@ do
         end
     end
 
-    function Addon:Delete()
+    function Addon:Dispose()
         local context = self.__AddonContext
         
         if context then
@@ -326,7 +326,7 @@ do
             end
             self.__AddonContext.Frame:UnregisterEvent(eventName)
         elseif eventName == "ADDONS_UNLOADING" then
-            self:Delete()
+            self:Dispose()
         end
         self:Broadcast(eventName, ...)
     end
