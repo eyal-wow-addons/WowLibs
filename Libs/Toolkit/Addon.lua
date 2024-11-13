@@ -83,8 +83,8 @@ do
 
     function Core:NewObject(name)
         C:IsString(name, 2)
-        local object = NewObject(self, name)
 
+        local object = NewObject(self, name)
         local storage = self:GetObject(name .. ".Storage", true)
 
         if storage then
@@ -96,16 +96,20 @@ do
 
     function Core:GetObject(name, silence)
         C:IsString(name, 2)
+
         local context = self.__AddonContext
         local object = context.Objects[name]
+
         if not silence then
             C:Ensures(object ~= nil, L["OBJECT_DOES_NOT_EXIST"], name)
         end
+
         return object
     end
 
     function Core:NewStorage(name)
         C:IsString(name, 2)
+
         local storage = NewObject(self, name .. ".Storage")
         local addonTable  = self
 
@@ -118,7 +122,9 @@ do
 
     function Core:GetStorage(name)
         C:IsString(name, 2)
+
         local fullName = name .. ".Storage"
+
         return self:GetObject(fullName)
     end
 
@@ -209,8 +215,10 @@ function Object:RegisterEvent(eventName, callback)
     C:IsString(eventName, 2)
     C:IsFunction(callback, 3)
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_REGISTER_EVENT"], eventName)
+
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
+
     if not callbacks then
         callbacks = {}
         context.Events[eventName] = callbacks
@@ -224,12 +232,14 @@ function Object:RegisterEvent(eventName, callback)
             end
         end
     end
+
     tinsert(callbacks, callback)
 end
 
 function Object:RegisterEvents(...)
     local eventNames = {}
     local callback
+
     for i = 1, select("#", ...) do
         local arg = select(i, ...)
         if type(arg) == "string" then
@@ -240,6 +250,7 @@ function Object:RegisterEvents(...)
             break
         end
     end
+
     if callback then
         for _, eventName in ipairs(eventNames) do
             self:RegisterEvent(eventName, callback)
@@ -250,8 +261,10 @@ end
 function Object:UnregisterEvent(eventName, callback)
     C:IsString(eventName, 2, "string")
     C:Ensures(eventName ~= "ADDON_LOADED", L["CANNOT_UNREGISTER_EVENT"], eventName)
+
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
+
     if callbacks then
         for i = #callbacks, 1, -1 do
             local registeredCallback = callbacks[i]
@@ -273,8 +286,10 @@ end
 
 function Object:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
+
     local context = self.__ObjectContext
     local callbacks = context.Events[eventName]
+    
     if callbacks then
         for _, callback in ipairs(callbacks) do
             SafeCall(callback, self, eventName, ...)
