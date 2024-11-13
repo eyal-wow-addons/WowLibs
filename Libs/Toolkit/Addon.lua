@@ -143,6 +143,9 @@ do
 
     function Addon:Broadcast(eventName, ...)
         for object in self:IterableObjects() do
+            -- NOTE: We're checking whether `TriggerEvent` exists
+            -- because we're adding the `addonTable` to the object list (`objects`)
+            -- and it lacks the Object's APIs.
             if object.TriggerEvent and not object:IsDisabled() then
                 object:TriggerEvent(eventName, ...)
             end
