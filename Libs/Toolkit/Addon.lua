@@ -23,7 +23,6 @@ local IsEventValid = C_EventUtils.IsEventValid
 --[[ Localization ]]
 
 local L = {
-    ["ADDON_MISSING"] = "The addon '%s' is missing or does not exist.",
     ["ADDON_CONTEXT_DOES_NOT_EXIST"] = "The required table '__AddonContext' does not exist.",
 	["OBJECT_ALREADY_EXISTS"] = "the object '%s' already exists.",
 	["OBJECT_DOES_NOT_EXIST"] = "the object '%s' does not exist.",
