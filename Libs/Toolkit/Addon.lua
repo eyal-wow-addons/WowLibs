@@ -241,7 +241,8 @@ function Object:UnregisterEvent(eventName, callback)
             end
         end
         if not callback or #callbacks == 0 then
-            if IsEventValid(eventName) then
+            local canUnregister = eventName ~= "PLAYER_LOGIN" and eventName ~= "PLAYER_LOGOUT"
+            if canUnregister and IsEventValid(eventName) then
                 context.Frame:UnregisterEvent(eventName)
             end
             context.Events[eventName] = nil
