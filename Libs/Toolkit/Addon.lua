@@ -16,7 +16,6 @@ local select = select
 local setmetatable = setmetatable
 local tinsert, tremove = table.insert, table.remove
 local type = type
-local twipe = table.wipe
 
 local IsEventValid = C_EventUtils.IsEventValid
 
@@ -284,25 +283,37 @@ do
         end
     end
 
+    local function ClearTable(t)
+        if next(t) == nil then
+            return
+        end
+        for k, v in pairs(t) do
+            if type(v) == "table" then
+                ClearTable(v)
+            end
+            t[k] = nil
+        end
+    end
+
     local function Dispose(addonTable)
-        local context = addonTable.__AddonContext
+        local addonContext = addonTable.__AddonContext
         
-        if context then
-            for i = #context.Names, 1, -1 do
-                local objName = context.Names[i]
-                context.Objects[objName] = nil
-                context.Names[i] = nil
+        if addonContext then
+            for i = #addonContext.Names, 1, -1 do
+                local objectName = addonContext.Names[i]
+                local object = addonContext.Objects[objectName]
+                local objectContext = object.__ObjectContext
+
+                if objectContext then
+                    ClearTable(objectContext)
+                    object.__ObjectContext = nil
+                end
+                
+                addonContext.Objects[objectName] = nil
+                addonContext.Names[i] = nil
             end
 
-            for eventName in pairs(context.Events) do
-                twipe(context.Events[eventName])
-                context.Events[eventName] = nil
-            end
-
-            for k in pairs(context) do
-                context[k] = nil
-            end
-
+            ClearTable(addonContext)
             addonTable.__AddonContext = nil
         end
     end
@@ -379,10 +390,10 @@ do
                         end
                     end,
                     Dispose = function()
-                        Dispose(addonTable)
                         frame:UnregisterAllEvents()
                         frame:SetScript("OnEvent", nil)
                         frame = nil
+                        Dispose(addonTable)
                     end
                 }
             }
