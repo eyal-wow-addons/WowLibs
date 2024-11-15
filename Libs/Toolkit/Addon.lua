@@ -171,12 +171,12 @@ end
 
 function Object:Disable()
     self.__ObjectContext.isDisabled = true
-    self:TriggerEvent("ADDONLIB_OBJECT_DISABLED")
+    self:TriggerEvent("ADDON_OBJECT_DISABLED")
 end
 
 function Object:Enable()
     self.__ObjectContext.isDisabled = false
-    self:TriggerEvent("ADDONLIB_OBJECT_ENABLED")
+    self:TriggerEvent("ADDON_OBJECT_ENABLED")
 end
 
 function Object:RegisterEvent(eventName, callback)
