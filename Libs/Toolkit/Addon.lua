@@ -55,7 +55,7 @@ do
                 __ObjectContext = {
                     name = name,
                     addonName = context.name,
-                    isDisabled = false,
+                    isSuspended = false,
                     Events = {},
                     Frame = {
                         RegisterEvent = context.Frame.RegisterEvent,
@@ -164,18 +164,18 @@ function Object:GetFullName()
     return self:GetAddonName() .. "." .. self:GetName()
 end
 
-function Object:IsDisabled()
-    return self.__ObjectContext.isDisabled
+function Object:IsSuspended()
+    return self.__ObjectContext.isSuspended
 end
 
-function Object:Disable()
-    self.__ObjectContext.isDisabled = true
-    self:TriggerEvent("ADDON_OBJECT_DISABLED")
+function Object:Suspend()
+    self.__ObjectContext.isSuspended = true
+    self:TriggerEvent("OBJECT_EVENTS_SUSPENDED")
 end
 
-function Object:Enable()
-    self.__ObjectContext.isDisabled = false
-    self:TriggerEvent("ADDON_OBJECT_ENABLED")
+function Object:Resume()
+    self.__ObjectContext.isSuspended = false
+    self:TriggerEvent("OBJECT_EVENTS_RESUMED")
 end
 
 function Object:RegisterEvent(eventName, callback)
@@ -252,7 +252,7 @@ end
 function Object:TriggerEvent(eventName, ...)
     C:IsString(eventName, 2)
 
-    if self:IsDisabled() then
+    if self:IsSuspended() then
         return
     end
 
