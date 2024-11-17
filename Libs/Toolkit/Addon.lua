@@ -284,8 +284,8 @@ do
     end
 
     local function ClearTable(t)
-        if next(t) == nil then
-            return
+        if not t or next(t) == nil then
+            return nil
         end
         for k, v in pairs(t) do
             if type(v) == "table" then
