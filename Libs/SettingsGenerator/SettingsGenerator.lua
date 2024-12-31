@@ -24,8 +24,8 @@ local L = {
     ["TYPE_IS_NOT_SUPPORTED"] = "the type '%s' is not supported. the type can either be 'boolean', 'number', 'string', 'table' or 'function'.",
     ["TEMPLATE_TYPE_NOT_PROVIDED"] = "the template '%s' does not have a type.",
     ["TEMPLATE_TYPE_UNKNOWN"] = "the template '%s' contains unknown type '%s'.",
-    ["TEMPLATE_PROPERTY_IS_REQUIRED"] = "the template's property '%s' is required.",
-    ["TEMPLATE_PROPERTY_VALUE_IS_INVALID"] = "the template's property '%s' has an invalid value '%s'.",
+    ["TEMPLATE_PROPERTY_IS_REQUIRED"] = "the template property '%s' is required.",
+    ["TEMPLATE_PROPERTY_VALUE_IS_INVALID"] = "the template property '[%s].%s' has an invalid value '%s'. Expected type '%s'.",
 }
 
 --[[ Template APIs ]]
@@ -101,7 +101,7 @@ do
         for propName, propType in pairs(schema) do
             local propValue = template[propName]
 
-            C:Ensures(IsValidValue(propType, propValue), L["TEMPLATE_PROPERTY_VALUE_IS_INVALID"], template.name, tostring(propValue))
+            C:Ensures(IsValidValue(propType, propValue), L["TEMPLATE_PROPERTY_VALUE_IS_INVALID"], template.name, propName, tostring(propValue), propType)
         end
     end
 
