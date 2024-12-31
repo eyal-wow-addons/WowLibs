@@ -338,9 +338,6 @@ do
 
         if eventName == "PLAYER_LOGIN" then
             OnInitialized(self)
-            -- NOTE: The goal here is to ensure that `OnInitialized` is called on objects 
-            -- before any callback is triggered during the `PLAYER_LOGIN` event. 
-            -- The two iterations (one here and one in `Broadcast`) enforce this order of operations.
             for object in self:IterableObjects() do
                 OnInitialized(object)
             end
