@@ -20,18 +20,18 @@ local Template = {}
 
 local L = {
     ["TYPE_ALREADY_REGISTERED"] = "the type '%s version %d' already registered.",
-    ["TYPE_IS_MISSING_CONSTRUCTOR"] = "the type '%s' is missing a constructor.",
     ["TYPE_IS_NOT_SUPPORTED"] = "the type '%s' is not supported. the type can either be 'boolean', 'number', 'string', 'table' or 'function'.",
-    ["TEMPLATE_TYPE_NOT_PROVIDED"] = "the template '%s' does not have a type.",
-    ["TEMPLATE_TYPE_UNKNOWN"] = "the template '%s' contains unknown type '%s'.",
-    ["TEMPLATE_PROPERTY_IS_REQUIRED"] = "the template property '%s' is required.",
-    ["TEMPLATE_PROPERTY_VALUE_IS_INVALID"] = "the template property '[%s].%s' has an invalid value '%s'. Expected type '%s'.",
+    ["TEMPLATE_FIELD_IS_REQUIRED"] = "the top-level template field '%s' is required.",
+    ["TEMPLATE_FIELD_VALUE_IS_INVALID"] = "the template field '[%s].%s' has an invalid value '%s'. Expected type '%s'.",
+    ["TEMPLATE_FIELD_NAME_IS_REQUIRED_AT_INDEX"] = "the template field '[%s].props#%d.name' is required.",
+    ["TEMPLATE_FIELD_TYPE_IS_MISSING"] = "the template '[%s].type' is nil or missing.",
+    ["TEMPLATE_FIELD_TYPE_IS_INVALID"] = "the template field '[%s].type' is invalid.",
 }
 
 --[[ Template APIs ]]
 
 function Template:Validate(schema)
-    lib:Validate(schema, self)
+    lib:Validate(self, schema)
 end
 
 function Template:RegisterCategory(category, layout)
@@ -91,44 +91,45 @@ do
         return actualType, isOptional
     end
 
-    local function IsValidValue(schemaType, propValue)
+    local function IsValidValue(propValue, schemaType)
         local actualType, isOptional = GetSchemaType(schemaType)
 
         return isOptional and propValue == nil or type(propValue) == actualType
     end
 
-    local function Validate(schema, template)
+    function lib:Validate(template, schema)
+        C:IsTable(template, 1)
+        C:IsTable(schema, 2)
+
         for propName, propType in pairs(schema) do
             local propValue = template[propName]
 
-            C:Ensures(IsValidValue(propType, propValue), L["TEMPLATE_PROPERTY_VALUE_IS_INVALID"], template.name, propName, tostring(propValue), propType)
+            C:Ensures(IsValidValue(propValue, propType), L["TEMPLATE_FIELD_VALUE_IS_INVALID"], template.name, propName, tostring(propValue), propType)
         end
-    end
-
-     function lib:Validate(schema, template)
-        C:IsTable(schema, 2)
-        C:IsTable(template, 3)
-
-        Validate(self.Schema, template)
-        Validate(schema, template)
     end
 end
 
 do
-    local function ConstructType(template)
+    local function ConstructType(template, index)
+        template = setmetatable(template, { __index = Template })
+
         local type = lib.Types[template.type]
+        local parent = template:GetParent()
 
-        C:Ensures(template.type, L["TEMPLATE_TYPE_NOT_PROVIDED"], template.name)
-        C:Ensures(type, L["TEMPLATE_TYPE_UNKNOWN"], template.name, template.type)
+        C:Ensures(template.name, L["TEMPLATE_FIELD_NAME_IS_REQUIRED_AT_INDEX"], parent and parent.name, index)
+        C:Ensures(template.type, L["TEMPLATE_FIELD_TYPE_IS_MISSING"], template.name)
+        C:Ensures(type, L["TEMPLATE_FIELD_TYPE_IS_INVALID"], template.name, template.type)
 
-        type.constructor(setmetatable(template, { __index = Template }), template:GetParent())
+        type.constructor(template, parent)
     end
 
     local function ConstructChildTypes(template)
+        lib:Validate(template, lib.Schema)
+
         if type(template.props) == "table" then
-            for _, t in ipairs(template.props) do
+            for index, t in ipairs(template.props) do
                 t.__parent = template
-                ConstructType(t)
+                ConstructType(t, index)
                 ConstructChildTypes(t)
             end
         end
@@ -142,8 +143,8 @@ do
     function lib:Generate(template)
         C:IsTable(template, 2)
 
-        C:Ensures(template.name, L["TEMPLATE_PROPERTY_IS_REQUIRED"], 'name')
-        C:Ensures(template.props, L["TEMPLATE_PROPERTY_IS_REQUIRED"], 'props')
+        C:Ensures(template.name, L["TEMPLATE_FIELD_IS_REQUIRED"], 'name')
+        C:Ensures(template.props, L["TEMPLATE_FIELD_IS_REQUIRED"], 'props')
 
         ConstructParentType(template)
 
