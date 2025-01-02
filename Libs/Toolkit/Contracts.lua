@@ -28,7 +28,7 @@ function lib:Ensures(condition, message, ...)
                 args[i] = "???"
             end
         end
-        assert(condition, message:format(unpack(args)))
+        error(message:format(unpack(args)), 3)
     end
 end
 
